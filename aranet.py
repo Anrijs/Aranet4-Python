@@ -5,7 +5,34 @@ import datetime
 import sys
 
 fetched = False
-dataset = {"co2":[],"t":[],"h":[],"p":[]}
+rawdata = {}
+
+def setRawRecord(idx, value, i):
+    step = 2
+    param = value[0]
+    if (param == 2): step = 1
+
+    global rawdata
+    raw = {1:-1,2:-1,3:-1,4:-1}
+
+    if (idx in rawdata):
+        raw = rawdata[idx]
+    else :
+        rawdata[idx] = raw
+
+    # parse value
+    if (param == 1): # Temperature
+        raw[param] = (value[i] + (value[i+1] << 8)) / 20.0
+    elif (param == 2): # Humidity
+        raw[param] = value[i]
+    elif (param == 3): # Pressure
+        raw[param] = (value[i] + (value[i+1] << 8)) / 10.0
+    elif (param == 4): # CO2
+        raw[param] = (value[i] + (value[i+1] << 8))
+
+    rawdata[idx] = raw
+
+    return step
 
 def data_handler_cb(handle, value):
     """
@@ -20,36 +47,13 @@ def data_handler_cb(handle, value):
 
     i = 4
     count = value[3]
-    #print "Received ", count
+    idx = (value[1] + (value[2] << 8)) - 1
+    pos = 0
 
-    if (value[0] == 1): # Temperature
-        step = 2
-        max = i + (count * step)
-        while (i < max):
-            temp = (value[i] + (value[i+1] << 8)) / 20.0
-            i += step
-            dataset["t"].append(temp)
-    if (value[0] == 4): #CO2
-        step = 2
-        max = i + (count * step)
-        while (i < max):
-            co2  = value[i] + (value[i+1] << 8)
-            i += step
-            dataset["co2"].append(co2)
-    if (value[0] == 3): #Pressure
-        step = 2
-        max = i + (count * step)
-        while (i < max):
-            p  = (value[i] + (value[i+1] << 8)) / 10.0
-            i += step
-            dataset["p"].append(p)
-    if (value[0] == 2): # Humidity
-        step = 1
-        max = i + (count * step)
-        while (i < max):
-            p  = value[i]
-            i += step
-            dataset["h"].append(p)
+    while (pos < count):
+        i += setRawRecord(idx, value, i)
+        pos += 1
+	idx += 1
 
     if (count == 0):
         global fetched
@@ -143,9 +147,7 @@ try:
         pass
     device.unsubscribe("f0cd2003-95da-4f4b-9ac8-aa55d312af0c")
 
-    ecount = len(dataset["co2"])
-    pos = 0
-
+    ecount = len(rawdata)
     rinterval = (interval / 60)
     now = datetime.datetime.now()
 
@@ -155,15 +157,18 @@ try:
     td = now - datetime.timedelta(minutes=(rinterval*(ecount-1))+mm)
 
     print " "
-    print "+-------+----------+--------+-------+------------+"
-    print "| Time  | CO2      | Temp.C | Humd  | Pressure   |"
-    print "+-------+----------+--------+-------+------------+"
+    print "+-------+------------------+----------+--------+-------+------------+"
+    print "| ID    | Time             | CO2      | Temp.C | Humd  | Pressure   |"
+    print "+-------+------------------+----------+--------+-------+------------+"
 
-    while (pos < ecount):
-        strtim = td.strftime('%H:%M')
-        print "| {:5s} | {:4d} ppm | {:2.1f} C | {:3d} % | {:4.1f} hPa |".format(strtim, dataset["co2"][pos], dataset["t"][pos], dataset["h"][pos], dataset["p"][pos])
-        pos += 1
+    for k in rawdata:
+        v = rawdata[k]
+        strtim = td.strftime('%Y-%m-%d %H:%M') # YYYY-MM-DD HH:MM
+        print "| {:5d} | {:16s} | {:4d} ppm | {:2.1f} C | {:3d} % | {:4.1f} hPa |".format(k, strtim, v[4], v[1], v[2], v[3])
         td += datetime.timedelta(minutes=rinterval)
+
+    print "+-------+------------------+----------+--------+-------+------------+"
+
 finally:
     adapter.stop()
 
