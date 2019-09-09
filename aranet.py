@@ -3,6 +3,7 @@ import binascii
 import time
 import datetime
 import sys
+import re
 
 fetched = False
 rawdata = {}
@@ -70,13 +71,16 @@ def getInterval(device):
 DEVICE_ADDRESS = sys.argv[-1]
 ADDRESS_TYPE = pygatt.BLEAddressType.random
 
+if not re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", DEVICE_ADDRESS.lower()):
+    print "Invalid device address"
+    sys.exit(0)
+
 adapter = pygatt.GATTToolBackend()
 adapter.start()
 
 try:
     adapter.start()
     device = adapter.connect(DEVICE_ADDRESS, timeout=15, address_type=ADDRESS_TYPE)
-    #device.exchange_mtu(247)
 
     interval = getInterval(device)
     print "Refresh interval: ", (interval/60), "minutes"
