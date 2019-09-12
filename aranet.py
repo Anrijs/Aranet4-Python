@@ -1,178 +1,288 @@
-import pygatt
+from bluepy import btle
 import binascii
 import time
 import datetime
 import sys
 import re
 
-fetched = False
-rawdata = {}
+class Aranet4HistoryDelegate(btle.DefaultDelegate):
+    def __init__(self, handle, param):
+        btle.DefaultDelegate.__init__(self)
+        self.param = param
+        self.handle = handle
+        self.results = {}
+        self.reading = True
 
-def setRawRecord(idx, value, i):
-    step = 2
-    param = value[0]
-    if (param == 2): step = 1
+    def handleNotification(self, handle, data):
+        raw = bytearray(data)
+        if self.handle != handle:
+            print "ERROR: invalid handle. Got", handle, ", expected", self.handle
+            return
 
-    global rawdata
-    raw = {1:-1,2:-1,3:-1,4:-1}
+        param = raw[0]
+        if self.param != param:
+            print "ERROR: invalid handle. Got", param, ", expected", self.param
+            return
 
-    if (idx in rawdata):
-        raw = rawdata[idx]
-    else :
-        rawdata[idx] = raw
+        idx = raw[1] + (raw[2] << 8) - 1
+        count = raw[3]
+        pos = 4
+        
+        self.reading = count > 0
 
-    # parse value
-    if (param == 1): # Temperature
-        raw[param] = (value[i] + (value[i+1] << 8)) / 20.0
-    elif (param == 2): # Humidity
-        raw[param] = value[i]
-    elif (param == 3): # Pressure
-        raw[param] = (value[i] + (value[i+1] << 8)) / 10.0
-    elif (param == 4): # CO2
-        raw[param] = (value[i] + (value[i+1] << 8))
+        while count > 0:
+            step = 1 if param == Aranet4.PARAM_HUMIDITY else 2
 
-    rawdata[idx] = raw
+            if len(raw) < pos + step:
+                print "ERROR: unexpected end of data"
+                break
 
-    return step
+            result = self._process(raw, pos, param)
+            self.results[idx] = result
+            pos += step
+            idx += 1
+            count -= 1
 
-def data_handler_cb(handle, value):
-    """
-        Indication and notification come asynchronously, we use this function to
-        handle them either one at the time as they come.
-    :param handle:
-    :param value:
-    :return:
-    """
+    def _process(self, data, pos, param):
+        if param == Aranet4.PARAM_TEMPERATURE:
+            return (data[pos] + (data[pos+1] << 8)) / 20.0
+        elif param == Aranet4.PARAM_HUMIDITY:
+            return data[pos]
+        elif param == Aranet4.PARAM_PRESSURE:
+            return (data[pos] + (data[pos+1] << 8)) / 10.0
+        elif param == Aranet4.PARAM_CO2:
+            return data[pos] + (data[pos+1] << 8)
+        return None
 
-    global dataset
+class Aranet4:
+    # Param IDs
+    PARAM_TEMPERATURE = 1
+    PARAM_HUMIDITY = 2
+    PARAM_PRESSURE = 3
+    PARAM_CO2 = 4
 
-    i = 4
-    count = value[3]
-    idx = (value[1] + (value[2] << 8)) - 1
-    pos = 0
+    # Aranet UUIDs and handles
+    # Services
+    AR4_SERVICE                   = btle.UUID("f0cd1400-95da-4f4b-9ac8-aa55d312af0c")
+    GENERIC_SERVICE               = btle.UUID("00001800-0000-1000-8000-00805f9b34fb")
+    COMMON_SERVICE                = btle.UUID("0000180a-0000-1000-8000-00805f9b34fb")
 
-    while (pos < count):
-        i += setRawRecord(idx, value, i)
-        pos += 1
-	idx += 1
+    # Read / Aranet service
+    AR4_READ_CURRENT_READINGS     = btle.UUID("f0cd1503-95da-4f4b-9ac8-aa55d312af0c")
+    AR4_READ_CURRENT_READINGS_DET = btle.UUID("f0cd3001-95da-4f4b-9ac8-aa55d312af0c")
+    AR4_READ_INTERVAL             = btle.UUID("f0cd2002-95da-4f4b-9ac8-aa55d312af0c")
+    AR4_READ_SECONDS_SINCE_UPDATE = btle.UUID("f0cd2004-95da-4f4b-9ac8-aa55d312af0c")
+    AR4_READ_TOTAL_READINGS       = btle.UUID("f0cd2001-95da-4f4b-9ac8-aa55d312af0c")
 
-    if (count == 0):
-        global fetched
-        fetched = True
+    # Read / Generic servce
+    GENERIC_READ_DEVICE_NAME       = btle.UUID("00002a00-0000-1000-8000-00805f9b34fb")
 
+    # Read / Common servce
+    COMMON_READ_MANUFACTURER_NAME = btle.UUID("00002a29-0000-1000-8000-00805f9b34fb")
+    COMMON_READ_MODEL_NUMBER      = btle.UUID("00002a24-0000-1000-8000-00805f9b34fb")
+    COMMON_READ_SERIAL_NO         = btle.UUID("00002a25-0000-1000-8000-00805f9b34fb")
+    COMMON_READ_HW_REV            = btle.UUID("00002a27-0000-1000-8000-00805f9b34fb")
+    COMMON_READ_SW_REV            = btle.UUID("00002a28-0000-1000-8000-00805f9b34fb")
+    COMMON_READ_BATTERY           = btle.UUID("00002a19-0000-1000-8000-00805f9b34fb")
 
-def getInterval(device):
-    value = device.char_read("f0cd2002-95da-4f4b-9ac8-aa55d312af0c")
-    b = bytearray(value)
-    sec  = b[0] + (b[1] << 8)
-    return sec
+    # Write / Aranet service
+    AR4_WRITE_CMD= btle.UUID("f0cd1402-95da-4f4b-9ac8-aa55d312af0c")
 
+    # Subscribe / Aranet service
+    AR4_SUBSCRIBE_HISTORY         = 0x0032
+    AR4_NOTIFY_HISTORY            = 0x0031
 
-DEVICE_ADDRESS = sys.argv[-1]
-ADDRESS_TYPE = pygatt.BLEAddressType.random
+    def __init__(self, address):
+	self.address = address
+        self.device = btle.Peripheral(address, btle.ADDR_TYPE_RANDOM)
+        # This will not work. bluez returns up to 20 bytes per notification and rest of data is never received.
+        # self.device.setMTU(247)
 
-if not re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", DEVICE_ADDRESS.lower()):
-    print "Invalid device address"
-    sys.exit(0)
+    def currentReadings(self, details=False):
+        readings = {"temperature": -1, "humidity": -1, "pressure": -1, "co2": -1, "battery": -1, "ago": -1, "interval": -1}
+        s = self.device.getServiceByUUID(self.AR4_SERVICE)
+        if details:
+            c = s.getCharacteristics(self.AR4_READ_CURRENT_READINGS_DET)
+        else:
+            c = s.getCharacteristics(self.AR4_READ_CURRENT_READINGS)
+            
+        b = bytearray(c[0].read())
 
-adapter = pygatt.GATTToolBackend()
-adapter.start()
+        readings["co2"]         = self.le16(b, 0)
+        readings["temperature"] = self.le16(b, 2) / 20.0
+        readings["pressure"]    = self.le16(b, 4) / 10.0
+        readings["humidity"]    = b[6]
+        readings["battery"]     = b[7]
+        
+        if details:
+            readings["interval"]      = self.le16(b, 9)
+            readings["ago"] = self.le16(b, 11)
 
-try:
-    adapter.start()
-    device = adapter.connect(DEVICE_ADDRESS, timeout=15, address_type=ADDRESS_TYPE)
+        return readings
 
-    interval = getInterval(device)
-    print "Refresh interval: ", (interval/60), "minutes"
-    print "=================================================="
+    def getInterval(self):
+        s = self.device.getServiceByUUID(self.AR4_SERVICE)
+        c = s.getCharacteristics(self.AR4_READ_INTERVAL)
+        return self.le16(c[0].read())
 
-    value = device.char_read("f0cd1503-95da-4f4b-9ac8-aa55d312af0c")
+    def getName(self):
+        s = self.device.getServiceByUUID(self.GENERIC_SERVICE)
+        c = s.getCharacteristics(self.GENERIC_READ_DEVICE_NAME)
+        return c[0].read()
 
-    b = bytearray(value)
+    def getVersion(self):
+        s = self.device.getServiceByUUID(self.COMMON_SERVICE)
+        c = s.getCharacteristics(self.COMMON_READ_SW_REV)
+        return c[0].read()
 
-    co2  = b[0] + (b[1] << 8)
-    temp = (b[2] + (b[3] << 8)) / 20.0
-    pres = (b[4] + (b[5] << 8)) / 10.0
-    hmd  = b[6]
-    bat  = b[7]
+    def pullHistory(self, param):
+        val = bytearray.fromhex("820000000100ffff")
+        val[1] = param
+        s = self.device.getServiceByUUID(self.AR4_SERVICE)
+        c = s.getCharacteristics(self.AR4_WRITE_CMD)
+        rsp = c[0].write(val, True)
 
-    print "CO2:              ", co2, "ppm"
-    print "Temperature:      ", temp, "C"
-    print "Pressure:         ", pres, "hPa"
-    print "Humidity:         ", hmd, "%"
-    print "Battery:          ", bat, "%"
-    print "=================================================="
+        # register delegate
+        delegate = Aranet4HistoryDelegate(self.AR4_NOTIFY_HISTORY, param)
+        self.device.setDelegate(delegate)
 
-    # read history
-    print "Subscribe handle: 0x0032, CO2"
-    fetched = False
-    device.char_write("f0cd1402-95da-4f4b-9ac8-aa55d312af0c", bytearray.fromhex("820400000100e007"), True)
-    device.subscribe("f0cd2003-95da-4f4b-9ac8-aa55d312af0c",
-            callback=data_handler_cb,
-            indication=False) # handle = 0032
+        rsp = self.device.writeCharacteristic(self.AR4_SUBSCRIBE_HISTORY, bytearray([1,0]), True)
 
-    while (not fetched):
-        pass
-    device.unsubscribe("f0cd2003-95da-4f4b-9ac8-aa55d312af0c")
+        timeout = 3
+        while timeout > 0 and delegate.reading:
+            if self.device.waitForNotifications(1.0):
+                continue
+            timeout -= 1
 
+        return delegate.results
 
-    print "Subscribe handle: 0x0032, Temperature"
-    fetched = False
-    #device.char_read ("f0cd2004-95da-4f4b-9ac8-aa55d312af0c")
-    #device.char_read ("f0cd1400-95da-4f4b-9ac8-aa55d312af0c")
-    time.sleep(1)
-    device.char_write("f0cd1402-95da-4f4b-9ac8-aa55d312af0c", bytearray.fromhex("820100000100e007"), True)
-    device.subscribe ("f0cd2003-95da-4f4b-9ac8-aa55d312af0c",
-            callback=data_handler_cb,
-            indication=False) # handle = 0032
-    while (not fetched):
-        pass
-    device.unsubscribe("f0cd2003-95da-4f4b-9ac8-aa55d312af0c")
+    def getSecondsSinceUpdate(self):
+        s = self.device.getServiceByUUID(self.AR4_SERVICE)
+        c = s.getCharacteristics(self.AR4_READ_SECONDS_SINCE_UPDATE)
+        return self.le16(c[0].read())
 
-    print "Subscribe handle: 0x0032, Humidity"
-    fetched = False
-    device.char_write("f0cd1402-95da-4f4b-9ac8-aa55d312af0c", bytearray.fromhex("820200000100e007"), True)
-    device.subscribe("f0cd2003-95da-4f4b-9ac8-aa55d312af0c",
-            callback=data_handler_cb,
-            indication=False) # handle = 0032
+    def getTotalReadings(self):
+        s = self.device.getServiceByUUID(self.AR4_SERVICE)
+        c = s.getCharacteristics(self.AR4_READ_TOTAL_READINGS)
+        return self.le16(c[0].read())
 
-    while (not fetched):
-        pass
-    device.unsubscribe("f0cd2003-95da-4f4b-9ac8-aa55d312af0c")
+    def le16(self, data, start=0):
+        raw = bytearray(data)
+        return raw[start] + (raw[start+1] << 8)
 
-    print "Subscribe handle: 0x0032, Pressure"
-    fetched = False
-    device.char_write("f0cd1402-95da-4f4b-9ac8-aa55d312af0c", bytearray.fromhex("820300000100e007"), True)
-    device.subscribe("f0cd2003-95da-4f4b-9ac8-aa55d312af0c",
-            callback=data_handler_cb,
-            indication=False) # handle = 0032
+    def dbgPrintChars(self):
+        for s in self.device.getServices():
+            print s
+            for c in s.getCharacteristics():
+                print " --> ", c
 
-    while (not fetched):
-        pass
-    device.unsubscribe("f0cd2003-95da-4f4b-9ac8-aa55d312af0c")
+def main(argv):
+    if len(argv) < 1:
+        print "Missing device address."
+        return
 
-    ecount = len(rawdata)
-    rinterval = (interval / 60)
-    now = datetime.datetime.now()
+    if "help" in argv or "?" in argv:
+        print "Usage: python aranet.py DEVICE_ADDRESS [OPTIONS]"
+        print "Options:"
+        print "  -n          Print current info only"
+        print "  -o <file>   Save history results to file"
+        print ""
+        return
 
-    # floor time to interval steps
-    mm = now.time().minute % rinterval
+    wait = False if "-w" in argv else True
+    history = False if "-n" in argv else True
+    output = ""
 
-    td = now - datetime.timedelta(minutes=(rinterval*(ecount-1))+mm)
+    if "-o" in argv:
+        idx = argv.index("-o") + 1
+        if idx >= len(argv):
+            print "Invalid output file name"
+            return
+        output= argv[idx]
 
-    print " "
-    print "+-------+------------------+----------+--------+-------+------------+"
-    print "| ID    | Time             | CO2      | Temp.C | Humd  | Pressure   |"
-    print "+-------+------------------+----------+--------+-------+------------+"
+    device_mac = argv[0]
+    if not re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", device_mac.lower()):
+        print "Invalid device address"
+        return
 
-    for k in rawdata:
-        v = rawdata[k]
-        strtim = td.strftime('%Y-%m-%d %H:%M') # YYYY-MM-DD HH:MM
-        print "| {:5d} | {:16s} | {:4d} ppm | {:2.1f} C | {:3d} % | {:4.1f} hPa |".format(k, strtim, v[4], v[1], v[2], v[3])
-        td += datetime.timedelta(minutes=rinterval)
+    ar4 = Aranet4(device_mac)
 
-    print "+-------+------------------+----------+--------+-------+------------+"
+    if "dbg" in argv:
+        ar4.dbgPrintChars()
+        return
 
-finally:
-    adapter.stop()
+    name = ar4.getName()
+    ver = ar4.getVersion()
+
+    current = ar4.currentReadings(True)
+
+    interval = current["interval"]
+    ago = current["ago"]
+
+    readings = ar4.getTotalReadings()
+
+    print "--------------------------------------"
+    print "Connected:", name, "|", ver
+    print "Updated",ago, "s ago. Intervals:", interval, "s"
+    print readings, "total readings"
+    print "--------------------------------------"
+    print "CO2:         ", current["co2"], "ppm"
+    print "Temperature: ", current["temperature"], "C"
+    print "Humidity:    ", current["humidity"], "%"
+    print "Pressure:    ", current["pressure"], "hPa"
+    print "Battery:     ", current["battery"], "%"
+    print "--------------------------------------"
+
+    if history:
+        ago = ar4.getSecondsSinceUpdate()
+        if (wait and ago > interval - 25):
+            # It takes about 5 seconds to read history for each parameter. 504->501->490 idx:4084-85-86  13:18pre
+            # We will wait for next measurement to keep data arrays aligned
+            tsleep = (interval - ago) + 5
+            print "Waiting",tsleep,"seconds for measurement"
+            time.sleep(tsleep) # +5s padding
+
+        readings = ar4.getTotalReadings()
+
+        print "Fetching CO2 history..."
+        resultsCO2 = ar4.pullHistory(Aranet4.PARAM_CO2)
+
+        print "Fetching Temperature history..."
+        resultsT = ar4.pullHistory(Aranet4.PARAM_TEMPERATURE)
+
+        print "Fetching Pressure history..."
+        resultsP = ar4.pullHistory(Aranet4.PARAM_PRESSURE)
+
+        print "Fetching Humidity history..."
+        resultsH = ar4.pullHistory(Aranet4.PARAM_HUMIDITY)
+
+        # build dataset using calculated id`s
+        count = len(resultsCO2)
+
+        rinterval = (interval / 60)
+        now = datetime.datetime.now()
+        mm = now.time().minute % rinterval
+
+        td = now - datetime.timedelta(minutes=(rinterval*(count-1))+mm)
+
+        f = False
+        if output != "":
+            f = open(output, "w")
+
+        for i in range(0,count):
+            finalIdx = readings - count + i
+            strtim = td.strftime('%Y-%m-%d %H:%M') # YYYY-MM-DD HH:MM
+            td += datetime.timedelta(minutes=rinterval)
+            csv = "{:d};{:s};{:2.2f};{:d};{:.1f};{:d}".format(finalIdx, strtim, resultsT[i], resultsH[i], resultsP[i], resultsCO2[i])
+            if (f):
+                f.write(csv)
+                f.write("\n")
+            else:
+                print csv
+
+        if (f): f.close()
+
+if __name__== "__main__":
+  main(sys.argv[1:])
+
 
