@@ -19,4 +19,5 @@ Options:
 ```
 -n          Print current info only
 -o <file>   Save history to file
+-l <count>  Get <count> last records
 ```

@@ -135,9 +135,16 @@ class Aranet4:
         c = s.getCharacteristics(self.COMMON_READ_SW_REV)
         return c[0].read()
 
-    def pullHistory(self, param):
+    def pullHistory(self, param, start=0x0001, end=0xFFFF):
+        start = start + 1
+        if start < 1:
+            start = 0x0001
+
         val = bytearray.fromhex("820000000100ffff")
         val[1] = param
+        self.writeLE16(val, 4, start)
+        self.writeLE16(val, 6, end)
+
         s = self.device.getServiceByUUID(self.AR4_SERVICE)
         c = s.getCharacteristics(self.AR4_WRITE_CMD)
         rsp = c[0].write(val, True)
@@ -170,6 +177,10 @@ class Aranet4:
         raw = bytearray(data)
         return raw[start] + (raw[start+1] << 8)
 
+    def writeLE16(self, data, pos, value):
+        data[pos] = (value) & 0x00FF
+        data[pos+1] = (value >> 8) & 0x00FF
+
     def dbgPrintChars(self):
         for s in self.device.getServices():
             print s
@@ -186,12 +197,14 @@ def main(argv):
         print "Options:"
         print "  -n          Print current info only"
         print "  -o <file>   Save history results to file"
+        print "  -l <count>  Get <count> last records"
         print ""
         return
 
     wait = False if "-w" in argv else True
     history = False if "-n" in argv else True
     output = ""
+    limit = 0
 
     if "-o" in argv:
         idx = argv.index("-o") + 1
@@ -199,6 +212,13 @@ def main(argv):
             print "Invalid output file name"
             return
         output= argv[idx]
+
+    if "-l" in argv:
+        idx = argv.index("-l") + 1
+        if idx >= len(argv):
+            print "Invalid limit"
+            return
+        limit = int(argv[idx])
 
     device_mac = argv[0]
     if not re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", device_mac.lower()):
@@ -235,7 +255,20 @@ def main(argv):
 
     if history:
         ago = ar4.getSecondsSinceUpdate()
-        if (wait and ago > interval - 25):
+
+        start = 0
+        end = readings
+
+        if limit != 0:
+            start = end - limit
+
+        readCount = end - start
+
+        # it takes about 8 seconds per parameter for 5040 record pull
+        requiredTime = (readCount / 150) + 2 # with nextra padding
+        #print "Required pull time:", requiredTime,"s"
+
+        if (wait and ago > interval - requiredTime):
             # It takes about 5 seconds to read history for each parameter. 504->501->490 idx:4084-85-86  13:18pre
             # We will wait for next measurement to keep data arrays aligned
             tsleep = (interval - ago) + 5
@@ -244,17 +277,20 @@ def main(argv):
 
         readings = ar4.getTotalReadings()
 
+        tim0 = time.time()
         print "Fetching CO2 history..."
-        resultsCO2 = ar4.pullHistory(Aranet4.PARAM_CO2)
+        resultsCO2 = ar4.pullHistory(Aranet4.PARAM_CO2, start, end)
 
         print "Fetching Temperature history..."
-        resultsT = ar4.pullHistory(Aranet4.PARAM_TEMPERATURE)
+        resultsT = ar4.pullHistory(Aranet4.PARAM_TEMPERATURE, start, end)
 
         print "Fetching Pressure history..."
-        resultsP = ar4.pullHistory(Aranet4.PARAM_PRESSURE)
+        resultsP = ar4.pullHistory(Aranet4.PARAM_PRESSURE, start, end)
 
         print "Fetching Humidity history..."
-        resultsH = ar4.pullHistory(Aranet4.PARAM_HUMIDITY)
+        resultsH = ar4.pullHistory(Aranet4.PARAM_HUMIDITY, start, end)
+
+        print "Pulled",len(resultsH),"records in", (time.time()-tim0), "s"
 
         # build dataset using calculated id`s
         count = len(resultsCO2)
@@ -269,7 +305,7 @@ def main(argv):
         if output != "":
             f = open(output, "w")
 
-        for i in range(0,count):
+        for i in range(start,end):
             finalIdx = readings - count + i
             strtim = td.strftime('%Y-%m-%d %H:%M') # YYYY-MM-DD HH:MM
             td += datetime.timedelta(minutes=rinterval)
