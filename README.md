@@ -26,6 +26,7 @@ Options:
 ## Examples
 ### Current readings
 Input: `python aranet.py AA:BB:CC:DD:EE:FF -n`
+
 Output:
 ```
 --------------------------------------
