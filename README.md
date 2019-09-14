@@ -23,10 +23,9 @@ Options:
 -u <url>    Remote url for current value push
 ```
 
-## Example
-Input
-`python aranet.py AA:BB:CC:DD:EE:FF -n`
-
+## Examples
+### Current readings
+Input: `python aranet.py AA:BB:CC:DD:EE:FF -n`
 Output:
 ```
 --------------------------------------
@@ -41,3 +40,14 @@ Pressure:     997.0 hPa
 Battery:      96 %
 --------------------------------------
 ```
+
+### History
+History file format: `Id;Date;Temperature;Humidity;Pressure,CO2`
+
+History file example:
+```
+0;2019-09-09 15:11;25.00;43;1015.2;504
+1;2019-09-09 15:12;25.00;43;1015.2;504
+...
+```
+
