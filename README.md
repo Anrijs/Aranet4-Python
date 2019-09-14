@@ -14,11 +14,30 @@ sudo pip install bluepy
    5. Exit from bluetooth ctl: `exit`
 
 ## Usage
-Run script:  `python aranet.py DEVCE_ADDRES> [OPTIONS]`
+Run script:  `python aranet.py <DEVCE_ADDRESS> [OPTIONS]`
 Options:
 ```
 -n          Print current info only
 -o <file>   Save history to file
 -l <count>  Get <count> last records
 -u <url>    Remote url for current value push
+```
+
+## Example
+Input
+`python aranet.py AA:BB:CC:DD:EE:FF -n`
+
+Output:
+```
+--------------------------------------
+Connected: Aranet4 00000 | v0.3.1
+Updated 51 s ago. Intervals: 60 s
+5040 total readings
+--------------------------------------
+CO2:          904 ppm
+Temperature:  19.9 C
+Humidity:     51 %
+Pressure:     997.0 hPa
+Battery:      96 %
+--------------------------------------
 ```
