@@ -4,6 +4,7 @@ import time
 import datetime
 import sys
 import re
+import requests
 
 class Aranet4HistoryDelegate(btle.DefaultDelegate):
     def __init__(self, handle, param):
@@ -27,7 +28,7 @@ class Aranet4HistoryDelegate(btle.DefaultDelegate):
         idx = raw[1] + (raw[2] << 8) - 1
         count = raw[3]
         pos = 4
-        
+
         self.reading = count > 0
 
         while count > 0:
@@ -105,7 +106,7 @@ class Aranet4:
             c = s.getCharacteristics(self.AR4_READ_CURRENT_READINGS_DET)
         else:
             c = s.getCharacteristics(self.AR4_READ_CURRENT_READINGS)
-            
+
         b = bytearray(c[0].read())
 
         readings["co2"]         = self.le16(b, 0)
@@ -113,7 +114,7 @@ class Aranet4:
         readings["pressure"]    = self.le16(b, 4) / 10.0
         readings["humidity"]    = b[6]
         readings["battery"]     = b[7]
-        
+
         if details:
             readings["interval"]      = self.le16(b, 9)
             readings["ago"] = self.le16(b, 11)
@@ -198,12 +199,15 @@ def main(argv):
         print "  -n          Print current info only"
         print "  -o <file>   Save history results to file"
         print "  -l <count>  Get <count> last records"
+        print "  -u <url>    Remote url for current value push"
         print ""
         return
 
     wait = False if "-w" in argv else True
     history = False if "-n" in argv else True
+
     output = ""
+    url = ""
     limit = 0
 
     if "-o" in argv:
@@ -220,6 +224,13 @@ def main(argv):
             return
         limit = int(argv[idx])
 
+    if "-u" in argv:
+        idx = argv.index("-u") + 1
+        if idx >= len(argv):
+            print "Invalid url"
+            return
+        url = argv[idx]
+
     device_mac = argv[0]
     if not re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", device_mac.lower()):
         print "Invalid device address"
@@ -234,10 +245,10 @@ def main(argv):
     name = ar4.getName()
     ver = ar4.getVersion()
 
-    current = ar4.currentReadings(True)
+    current = ar4.currentReadings(False)
 
-    interval = current["interval"]
-    ago = current["ago"]
+    interval = ar4.getInterval() #current["interval"]
+    ago = ar4.getSecondsSinceUpdate() #current["ago"]
 
     readings = ar4.getTotalReadings()
 
@@ -253,9 +264,23 @@ def main(argv):
     print "Battery:     ", current["battery"], "%"
     print "--------------------------------------"
 
-    if history:
-        ago = ar4.getSecondsSinceUpdate()
+    if url != "":
+        # get current measurement minute
+        t = time.time() - ago
+        #t = t - t % 60 # epoch, floored to minutes
 
+        r = requests.post(url, data = {
+            'time':t,
+            'co2':current["co2"],
+            'temperature':current["temperature"],
+            'pressure':current["pressure"],
+            'humidity':current["humidity"],
+            'battery':current["battery"]
+            })
+
+        print "Pushing data:", r.text
+
+    if history:
         start = 0
         end = readings
 
@@ -320,5 +345,3 @@ def main(argv):
 
 if __name__== "__main__":
   main(sys.argv[1:])
-
-
