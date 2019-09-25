@@ -1,4 +1,4 @@
-# Aanet4 Python client
+# Aranet4 Python client
 ## Installation
 1. Install bluepy:
 ```
