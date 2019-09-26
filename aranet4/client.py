@@ -1,7 +1,4 @@
 from bluepy import btle
-import binascii
-import time
-import datetime
 import sys
 import re
 

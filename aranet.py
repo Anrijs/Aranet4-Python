@@ -1,5 +1,7 @@
 import aranet4
 import requests
+import time
+import datetime
 import sys
 
 def main(argv):
@@ -111,16 +113,16 @@ def main(argv):
 
         tim0 = time.time()
         print "Fetching CO2 history..."
-        resultsCO2 = ar4.pullHistory(Aranet4.PARAM_CO2, start, end)
+        resultsCO2 = ar4.pullHistory(ar4.PARAM_CO2, start, end)
 
         print "Fetching Temperature history..."
-        resultsT = ar4.pullHistory(Aranet4.PARAM_TEMPERATURE, start, end)
+        resultsT = ar4.pullHistory(ar4.PARAM_TEMPERATURE, start, end)
 
         print "Fetching Pressure history..."
-        resultsP = ar4.pullHistory(Aranet4.PARAM_PRESSURE, start, end)
+        resultsP = ar4.pullHistory(ar4.PARAM_PRESSURE, start, end)
 
         print "Fetching Humidity history..."
-        resultsH = ar4.pullHistory(Aranet4.PARAM_HUMIDITY, start, end)
+        resultsH = ar4.pullHistory(ar4.PARAM_HUMIDITY, start, end)
 
         print "Pulled",len(resultsH),"records in", (time.time()-tim0), "s"
 
