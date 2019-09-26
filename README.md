@@ -24,6 +24,22 @@ Options:
 -u <url>    Remote url for current value push
 ```
 
+### Usage as library
+You can use this in your own project by adding aranet4 folder to your project and in main code just import it:
+```
+import aranet4
+
+device_mac = "00:00:00:00:00:00"
+
+ar4 = aranet4.Aranet4(device_mac)
+current = ar4.currentReadings()
+
+print "Temperature:", current["temperature"]
+print "Humidity:", current["humidity"]
+print "Pressure:", current["pressure"]
+print "CO2:", current["co2"]
+```
+
 ## Examples
 ### Current readings
 Input: `python aranet.py AA:BB:CC:DD:EE:FF -n`
