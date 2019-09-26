@@ -5,6 +5,7 @@
 sudo apt-get install python-pip
 sudo apt-get install libglib2.0-dev
 sudo pip install bluepy
+sudo pip install requests
 ```
 2. Pair device:
    1. Open bluetoothctl: `sudo bluetoothctl`
