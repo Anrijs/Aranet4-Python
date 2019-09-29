@@ -16,12 +16,12 @@ class Aranet4HistoryDelegate(btle.DefaultDelegate):
     def handleNotification(self, handle, data):
         raw = bytearray(data)
         if self.handle != handle:
-            print "ERROR: invalid handle. Got", handle, ", expected", self.handle
+            print("ERROR: invalid handle. Got", handle, ", expected", self.handle)
             return
 
         param = raw[0]
         if self.param != param:
-            print "ERROR: invalid handle. Got", param, ", expected", self.param
+            print("ERROR: invalid handle. Got", param, ", expected", self.param)
             return
 
         idx = raw[1] + (raw[2] << 8) - 1
@@ -34,7 +34,7 @@ class Aranet4HistoryDelegate(btle.DefaultDelegate):
             step = 1 if param == Aranet4.PARAM_HUMIDITY else 2
 
             if len(raw) < pos + step:
-                print "ERROR: unexpected end of data"
+                print("ERROR: unexpected end of data")
                 break
 
             result = self._process(raw, pos, param)
@@ -96,7 +96,7 @@ class Aranet4:
         if not re.match("[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", address.lower()):
             raise Aranet4Error("Invalid device address")
 
-	self.address = address
+        self.address = address
         self.device = btle.Peripheral(address, btle.ADDR_TYPE_RANDOM)
 
         # This will not work. bluez returns up to 20 bytes per notification and rest of data is never received.
@@ -187,6 +187,6 @@ class Aranet4:
 
     def dbgPrintChars(self):
         for s in self.device.getServices():
-            print s
+            print(s)
             for c in s.getCharacteristics():
-                print " --> ", c
+                print(" --> ", c)

@@ -6,17 +6,17 @@ import sys
 
 def main(argv):
     if len(argv) < 1:
-        print "Missing device address."
+        print("Missing device address.")
         return
 
     if "help" in argv or "?" in argv:
-        print "Usage: python aranet.py DEVICE_ADDRESS [OPTIONS]"
-        print "Options:"
-        print "  -n          Print current info only"
-        print "  -o <file>   Save history results to file"
-        print "  -l <count>  Get <count> last records"
-        print "  -u <url>    Remote url for current value push"
-        print ""
+        print("Usage: python aranet.py DEVICE_ADDRESS [OPTIONS]")
+        print("Options:")
+        print("  -n          Print current info only")
+        print("  -o <file>   Save history results to file")
+        print("  -l <count>  Get <count> last records")
+        print("  -u <url>    Remote url for current value push")
+        print("")
         return
 
     wait = False if "-w" in argv else True
@@ -29,21 +29,21 @@ def main(argv):
     if "-o" in argv:
         idx = argv.index("-o") + 1
         if idx >= len(argv):
-            print "Invalid output file name"
+            print("Invalid output file name")
             return
         output= argv[idx]
 
     if "-l" in argv:
         idx = argv.index("-l") + 1
         if idx >= len(argv):
-            print "Invalid limit"
+            print("Invalid limit")
             return
         limit = int(argv[idx])
 
     if "-u" in argv:
         idx = argv.index("-u") + 1
         if idx >= len(argv):
-            print "Invalid url"
+            print("Invalid url")
             return
         url = argv[idx]
 
@@ -61,17 +61,17 @@ def main(argv):
 
     readings = ar4.getTotalReadings()
 
-    print "--------------------------------------"
-    print "Connected:", name, "|", ver
-    print "Updated",ago, "s ago. Intervals:", interval, "s"
-    print readings, "total readings"
-    print "--------------------------------------"
-    print "CO2:         ", current["co2"], "ppm"
-    print "Temperature: ", current["temperature"], "C"
-    print "Humidity:    ", current["humidity"], "%"
-    print "Pressure:    ", current["pressure"], "hPa"
-    print "Battery:     ", current["battery"], "%"
-    print "--------------------------------------"
+    print("--------------------------------------")
+    print("Connected:", name, "|", ver)
+    print("Updated",ago, "s ago. Intervals:", interval, "s")
+    print(readings, "total readings")
+    print("--------------------------------------")
+    print("CO2:         ", current["co2"], "ppm")
+    print("Temperature: ", current["temperature"], "C")
+    print("Humidity:    ", current["humidity"], "%")
+    print("Pressure:    ", current["pressure"], "hPa")
+    print("Battery:     ", current["battery"], "%")
+    print("--------------------------------------")
 
     if url != "":
         # get current measurement minute
@@ -87,7 +87,7 @@ def main(argv):
             'battery':current["battery"]
             })
 
-        print "Pushing data:", r.text
+        print("Pushing data:", r.text)
 
     if history:
         start = 0
@@ -106,25 +106,25 @@ def main(argv):
             # It takes about 5 seconds to read history for each parameter. 504->501->490 idx:4084-85-86  13:18pre
             # We will wait for next measurement to keep data arrays aligned
             tsleep = (interval - ago) + 5
-            print "Waiting",tsleep,"seconds for measurement"
+            print("Waiting",tsleep,"seconds for measurement")
             time.sleep(tsleep) # +5s padding
 
         readings = ar4.getTotalReadings()
 
         tim0 = time.time()
-        print "Fetching CO2 history..."
+        print("Fetching CO2 history...")
         resultsCO2 = ar4.pullHistory(ar4.PARAM_CO2, start, end)
 
-        print "Fetching Temperature history..."
+        print("Fetching Temperature history...")
         resultsT = ar4.pullHistory(ar4.PARAM_TEMPERATURE, start, end)
 
-        print "Fetching Pressure history..."
+        print("Fetching Pressure history...")
         resultsP = ar4.pullHistory(ar4.PARAM_PRESSURE, start, end)
 
-        print "Fetching Humidity history..."
+        print("Fetching Humidity history...")
         resultsH = ar4.pullHistory(ar4.PARAM_HUMIDITY, start, end)
 
-        print "Pulled",len(resultsH),"records in", (time.time()-tim0), "s"
+        print("Pulled",len(resultsH),"records in", (time.time()-tim0), "s")
 
         # build dataset using calculated id`s
         count = len(resultsCO2)
@@ -148,7 +148,7 @@ def main(argv):
                 f.write(csv)
                 f.write("\n")
             else:
-                print csv
+                print(csv)
 
         if (f): f.close()
 
