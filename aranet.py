@@ -107,7 +107,7 @@ def main(argv):
         tim0 = time.time()
 
         print "Fetching sensor history..."
-        results = ar4.pullTimedHistory(start, end, "tphc")
+        results = ar4.pullTimedHistory(start, end, params)
 
         print("Pulled",len(results),"records in", (time.time()-tim0), "s")
 
