@@ -1,6 +1,7 @@
 from bluepy import btle
 import sys
 import re
+import datetime
 
 class Aranet4Error(Exception):
     pass
@@ -138,6 +139,48 @@ class Aranet4:
         s = self.device.getServiceByUUID(self.COMMON_SERVICE)
         c = s.getCharacteristics(self.COMMON_READ_SW_REV)
         return c[0].read()
+
+    def pullTimedHistory(self, start=0x0001, end=0xFFFF, params="thpc"):
+        interval = self.getInterval()
+        ago = self.getSecondsSinceUpdate()
+        total = self.getTotalReadings()
+
+        # last measurement, epoch
+        last = ((datetime.datetime.utcnow().replace(microsecond=0) - datetime.timedelta(seconds=ago)) - datetime.datetime(1970,1,1)).total_seconds()
+
+        resultsCO2 = {}
+        resultsT = {}
+        resultsP = {}
+        resultsH = {}
+
+        if "c" in params:
+            resultsCO2 = self.pullHistory(self.PARAM_CO2, start, end)
+
+        if "t" in params:
+            resultsT = self.pullHistory(self.PARAM_TEMPERATURE, start, end)
+
+        if "p" in params:
+            resultsP = self.pullHistory(self.PARAM_PRESSURE, start, end)
+
+        if "h" in params:
+            resultsH = self.pullHistory(self.PARAM_HUMIDITY, start, end)
+
+        results = []
+
+        for i in range(start,end):
+            delta = (total - (i + 1)) * interval
+            epoch = last - delta
+            r = {
+                "id": i,
+                "time": epoch,
+                "temperature":  resultsT.get(i, -1),
+                "pressure":  resultsP.get(i, -1),
+                "humidity":  resultsH.get(i, -1),
+                "co2":  resultsCO2.get(i, -1)
+            }
+            results.append(r)
+
+        return results
 
     def pullHistory(self, param, start=0x0001, end=0xFFFF):
         start = start + 1
