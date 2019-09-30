@@ -69,3 +69,21 @@ History file example:
 ...
 ```
 
+### Usage with InfluxDB 
+If you wish to store data on server, using InfuxDB, check `influx.py`
+
+**Automatic data collection**
+To automate data collection, using crontab will be easiest way:
+1. Edit crontab: `crontab -e`
+2. Add job. If running Aranet4 with 1 minute intervals, run script veery minute:    
+```
+* * * * * python /PATH_TO_THIS_REPO/influx.py XX:XX:XX:XX:XX:XX anrijsAR4
+```
+3. Save and close crontab.
+
+**History upload**
+It is also possible to upload history to InfluxDB. In this case run command:
+`python influx.py XX:XX:XX:XX:XX:XX anrijsAR4 -h`
+
+To limit record count, add `-l <count>` parameter.
+
