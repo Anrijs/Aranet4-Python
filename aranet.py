@@ -4,6 +4,15 @@ import time
 import datetime
 import sys
 
+def readArg(argv, key, default, error="Invalid value"):
+    if key in argv:
+        idx = argv.index(key) + 1
+        if idx >= len(argv):
+            print(error)
+            raise Exception(error)
+        return argv[idx]
+    return default
+
 def main(argv):
     if len(argv) < 1:
         print("Missing device address.")
@@ -12,40 +21,26 @@ def main(argv):
     if "help" in argv or "?" in argv:
         print("Usage: python aranet.py DEVICE_ADDRESS [OPTIONS]")
         print("Options:")
-        print("  -n          Print current info only")
+        print("  -h          Fetch history")
         print("  -o <file>   Save history results to file")
+        print("  -w          Do not wait for sync before pulling history")
         print("  -l <count>  Get <count> last records")
         print("  -u <url>    Remote url for current value push")
+        print("  -p <params> History values to pull (default = thpc)")
+        print("                t - Temperature")
+        print("                h - Humidity")
+        print("                p - Pressure")
+        print("                c - CO2")
         print("")
         return
 
-    wait = False if "-w" in argv else True
-    history = False if "-n" in argv else True
+    wait = "-w" not in argv
+    history = "-h" in argv
 
-    output = ""
-    url = ""
-    limit = 0
-
-    if "-o" in argv:
-        idx = argv.index("-o") + 1
-        if idx >= len(argv):
-            print("Invalid output file name")
-            return
-        output= argv[idx]
-
-    if "-l" in argv:
-        idx = argv.index("-l") + 1
-        if idx >= len(argv):
-            print("Invalid limit")
-            return
-        limit = int(argv[idx])
-
-    if "-u" in argv:
-        idx = argv.index("-u") + 1
-        if idx >= len(argv):
-            print("Invalid url")
-            return
-        url = argv[idx]
+    output = readArg(argv, "-o", '', "Missing output file name")
+    limit = int(readArg(argv, "-l", 0, "Missing limit value"))
+    url = readArg(argv, "-u", '', "Invalid url")
+    params = readArg(argv, "-p", "thpc", "Missing params value")
 
     device_mac = argv[0]
 
