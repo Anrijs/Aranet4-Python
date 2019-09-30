@@ -109,41 +109,26 @@ def main(argv):
             print("Waiting",tsleep,"seconds for measurement")
             time.sleep(tsleep) # +5s padding
 
-        readings = ar4.getTotalReadings()
-
         tim0 = time.time()
-        print("Fetching CO2 history...")
-        resultsCO2 = ar4.pullHistory(ar4.PARAM_CO2, start, end)
 
-        print("Fetching Temperature history...")
-        resultsT = ar4.pullHistory(ar4.PARAM_TEMPERATURE, start, end)
+        print "Fetching sensor history..."
+        results = ar4.pullTimedHistory(start, end, "tphc")
 
-        print("Fetching Pressure history...")
-        resultsP = ar4.pullHistory(ar4.PARAM_PRESSURE, start, end)
-
-        print("Fetching Humidity history...")
-        resultsH = ar4.pullHistory(ar4.PARAM_HUMIDITY, start, end)
-
-        print("Pulled",len(resultsH),"records in", (time.time()-tim0), "s")
-
-        # build dataset using calculated id`s
-        count = len(resultsCO2)
-
-        rinterval = (interval / 60)
-        now = datetime.datetime.now()
-        mm = now.time().minute % rinterval
-
-        td = now - datetime.timedelta(minutes=(rinterval*(count-1))+mm)
+        print("Pulled",len(results),"records in", (time.time()-tim0), "s")
 
         f = False
         if output != "":
             f = open(output, "w")
 
-        for i in range(start,end):
-            finalIdx = readings - count + i
-            strtim = td.strftime('%Y-%m-%d %H:%M') # YYYY-MM-DD HH:MM
-            td += datetime.timedelta(minutes=rinterval)
-            csv = "{:d};{:s};{:2.2f};{:d};{:.1f};{:d}".format(finalIdx, strtim, resultsT[i], resultsH[i], resultsP[i], resultsCO2[i])
+        for r in results:
+            strtim = datetime.datetime.utcfromtimestamp(r["time"]).strftime('%Y-%m-%d %H:%M:%S')
+            t = r["temperature"]
+            p = r["pressure"]
+            h = r["humidity"]
+            c = r["co2"]
+            i = r["id"]
+            csv = "{:d};{:s};{:2.2f};{:d};{:.1f};{:d}".format(i, strtim, t, h, p, c)
+
             if (f):
                 f.write(csv)
                 f.write("\n")
