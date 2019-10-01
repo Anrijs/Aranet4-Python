@@ -14,35 +14,24 @@ sudo pip install requests
    4. Pair device: `pair <DEVICE_ADDRESS>`
    5. Exit from bluetooth ctl: `exit`
 
-## Usage
+## aranet.py usage
 Run script:  `python aranet.py <DEVCE_ADDRESS> [OPTIONS]`
 Options:
 ```
--n          Print current info only
--o <file>   Save history to file
+-h          Fetch history
+-o <file>   Save history results to file
+-w          Do not wait for sync before pulling history
 -l <count>  Get <count> last records
 -u <url>    Remote url for current value push
+-p <params> History values to pull (default = thpc)
+              t - Temperature
+              h - Humidity
+              p - Pressure
+              c - CO2
 ```
 
-### Usage as library
-You can use this in your own project by adding aranet4 folder to your project and in main code just import it:
-```
-import aranet4
-
-device_mac = "00:00:00:00:00:00"
-
-ar4 = aranet4.Aranet4(device_mac)
-current = ar4.currentReadings()
-
-print "Temperature:", current["temperature"]
-print "Humidity:", current["humidity"]
-print "Pressure:", current["pressure"]
-print "CO2:", current["co2"]
-```
-
-## Examples
 ### Current readings
-Input: `python aranet.py AA:BB:CC:DD:EE:FF -n`
+Input: `python aranet.py XX:XX:XX:XX:XX:XX`
 
 Output:
 ```
@@ -60,6 +49,8 @@ Battery:      96 %
 ```
 
 ### History
+Usage: `python aranet.py XX:XX:XX:XX:XX:XX -h [-l COUNT] -o FILENAME`
+
 History file format: `Id;Date;Temperature;Humidity;Pressure,CO2`
 
 History file example:
@@ -69,21 +60,26 @@ History file example:
 ...
 ```
 
-### Usage with InfluxDB 
-If you wish to store data on server, using InfuxDB, check `influx.py`
+## Usage as library
+Install this library form pip: `pip install aranet4`
 
-**Automatic data collection**
-To automate data collection, using crontab will be easiest way:
-1. Edit crontab: `crontab -e`
-2. Add job. If running Aranet4 with 1 minute intervals, run script veery minute:    
+or copy `aranet4` directory to your own project.
+
+### Example
 ```
-* * * * * python /PATH_TO_THIS_REPO/influx.py XX:XX:XX:XX:XX:XX anrijsAR4
+import aranet4
+
+device_mac = "00:00:00:00:00:00"
+
+ar4 = aranet4.Aranet4(device_mac)
+current = ar4.currentReadings()
+
+print "Temperature:", current["temperature"]
+print "Humidity:", current["humidity"]
+print "Pressure:", current["pressure"]
+print "CO2:", current["co2"]
 ```
-3. Save and close crontab.
 
-**History upload**
-It is also possible to upload history to InfluxDB. In this case run command:
-`python influx.py XX:XX:XX:XX:XX:XX anrijsAR4 -h`
-
-To limit record count, add `-l <count>` parameter.
-
+## More Examples
+### InfluxDB
+Find InfluxDB examples in `examples/influx` directory.
