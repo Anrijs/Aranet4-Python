@@ -18,16 +18,18 @@ sudo pip install requests
 Run script:  `python aranet.py <DEVCE_ADDRESS> [OPTIONS]`
 Options:
 ```
--h          Fetch history
--o <file>   Save history results to file
--w          Do not wait for sync before pulling history
--l <count>  Get <count> last records
--u <url>    Remote url for current value push
--p <params> History values to pull (default = thpc)
-              t - Temperature
-              h - Humidity
-              p - Pressure
-              c - CO2
+-h            Fetch history
+-hs <date>    History range start (UTC time, example: 2019-09-29T14:00:00Z)
+-he <date>    History range end (UTC time, example: 2019-09-30T14:00:00Z)
+-o  <file>    Save history results to file
+-w            Do not wait for sync before pulling history
+-l  <count>   Get <count> last records
+-u  <url>     Remote url for current value push
+-p  <params>  History values to pull (default = thpc)
+                t - Temperature
+                h - Humidity
+                p - Pressure
+                c - CO2
 ```
 
 ### Current readings

@@ -2,6 +2,7 @@ from bluepy import btle
 import sys
 import re
 import datetime
+import math
 
 class Aranet4Error(Exception):
     pass
@@ -140,13 +141,49 @@ class Aranet4:
         c = s.getCharacteristics(self.COMMON_READ_SW_REV)
         return c[0].read().decode("utf-8")
 
-    def pullTimedHistory(self, start=0x0001, end=0xFFFF, params="thpc"):
-        interval = self.getInterval()
+    def getLastMeasurementDate(self, epoch=False):
         ago = self.getSecondsSinceUpdate()
+        last = datetime.datetime.utcnow().replace(microsecond=0) - datetime.timedelta(seconds=ago)
+
+        if epoch:
+            return (last - datetime.datetime(1970,1,1)).total_seconds()
+        else:
+            return last
+
+    def pullTimedInRange(self, start, end, params="thpc"):
+        last = self.getLastMeasurementDate(False)
         total = self.getTotalReadings()
+        interval = self.getInterval()
+
+        startAgo = math.ceil((last - start).total_seconds() / interval)
+        endAgo = math.ceil((last - end).total_seconds() / interval)
+
+        startIdx = int(total - startAgo)
+        endIdx = int(total - endAgo)
+
+        # swap
+        if (startIdx > endIdx):
+            startIdx, endIdx = endIdx, startIdx
+
+        if endIdx < 1:
+            return [] # range doesn't contain any records
+
+        if endIdx > total:
+            endIdx = total
+
+        if startIdx < 1:
+            startIdx = 1
+
+        return self.pullTimedHistory(startIdx, endIdx, params, total)
+
+    def pullTimedHistory(self, start=0x0001, end=0xFFFF, params="thpc", total=False):
+        interval = self.getInterval()
+
+        if not total:
+            total = self.getTotalReadings()
 
         # last measurement, epoch
-        last = ((datetime.datetime.utcnow().replace(microsecond=0) - datetime.timedelta(seconds=ago)) - datetime.datetime(1970,1,1)).total_seconds()
+        last = self.getLastMeasurementDate(True)
 
         resultsCO2 = {}
         resultsT = {}

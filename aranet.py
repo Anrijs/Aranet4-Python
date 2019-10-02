@@ -3,6 +3,7 @@ import requests
 import time
 import datetime
 import sys
+import re
 
 def readArg(argv, key, default, error="Invalid value"):
     if key in argv:
@@ -21,16 +22,18 @@ def main(argv):
     if "help" in argv or "?" in argv:
         print("Usage: python aranet.py DEVICE_ADDRESS [OPTIONS]")
         print("Options:")
-        print("  -h          Fetch history")
-        print("  -o <file>   Save history results to file")
-        print("  -w          Do not wait for sync before pulling history")
-        print("  -l <count>  Get <count> last records")
-        print("  -u <url>    Remote url for current value push")
-        print("  -p <params> History values to pull (default = thpc)")
-        print("                t - Temperature")
-        print("                h - Humidity")
-        print("                p - Pressure")
-        print("                c - CO2")
+        print("  -h            Fetch history")
+        print("  -hs <date>    History range start (UTC time, example: 2019-09-29T14:00:00Z)")
+        print("  -he <date>    History range end (UTC time, example: 2019-09-30T14:00:00Z)")
+        print("  -o  <file>    Save history results to file")
+        print("  -w            Do not wait for sync before pulling history")
+        print("  -l  <count>   Get <count> last records")
+        print("  -u  <url>     Remote url for current value push")
+        print("  -p  <params>  History values to pull (default = thpc)")
+        print("                  t - Temperature")
+        print("                  h - Humidity")
+        print("                  p - Pressure")
+        print("                  c - CO2")
         print("")
         return
 
@@ -41,6 +44,27 @@ def main(argv):
     limit = int(readArg(argv, "-l", 0, "Missing limit value"))
     url = readArg(argv, "-u", '', "Invalid url")
     params = readArg(argv, "-p", "thpc", "Missing params value")
+
+    histStartStr = readArg(argv, "-hs", '', "Missing history range start value")
+    histEndStr = readArg(argv,   "-he",   '', "Missing history range end value")
+
+    histStart = None
+    histEnd = None
+
+    if len(histStartStr) > 0 or len(histEndStr) > 0:
+        if len(histStartStr) > 0:
+            histStart = datetime.datetime.strptime(histStartStr, "%Y-%m-%dT%H:%M:%SZ")
+        else:
+            histStart = datetime.datetime(1970, 1, 1)
+
+        if len(histEndStr) > 0:
+            histEnd = datetime.datetime.strptime(histEndStr, "%Y-%m-%dT%H:%M:%SZ")
+        else:
+            histEnd = datetime.datetime.utcnow()
+
+        if limit != 0:
+            print("Limit parameter (-l) will be ignored, because -start and/or -end is already defined")
+            limit = 0
 
     device_mac = argv[0]
 
@@ -93,9 +117,22 @@ def main(argv):
 
         readCount = end - start
 
+        if histStart and histEnd:
+            oldest = datetime.datetime.utcnow() - datetime.timedelta(seconds=readCount*interval)
+
+            if (oldest > histStart):
+                histStart = oldest
+
+            readCount = (histEnd - histStart).total_seconds() / interval
+
+        paramsMod = 1.0
+        if "t" not in params: paramsMod -= 0.25
+        if "h" not in params: paramsMod -= 0.25
+        if "p" not in params: paramsMod -= 0.25
+        if "c" not in params: paramsMod -= 0.25
+
         # it takes about 8 seconds per parameter for 5040 record pull
-        requiredTime = (readCount / 150) + 2 # with nextra padding
-        #print "Required pull time:", requiredTime,"s"
+        requiredTime = ((readCount / 150) + 2) * paramsMod # with nextra padding
 
         if (wait and ago > interval - requiredTime):
             # It takes about 5 seconds to read history for each parameter. 504->501->490 idx:4084-85-86  13:18pre
@@ -106,8 +143,16 @@ def main(argv):
 
         tim0 = time.time()
 
-        print("Fetching sensor history...")
-        results = ar4.pullTimedHistory(start, end, params)
+        if histStart and histEnd:
+            print("Fetching {:d} points of sensor history in date range {:s} -> {:s}...".format(
+                int(readCount),
+                histStart.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                histEnd.strftime("%Y-%m-%dT%H:%M:%SZ")))
+
+            results = ar4.pullTimedInRange(histStart, histEnd, params)
+        else:
+            print("Fetching {:d} points of sensor history...".format(int(readCount)))
+            results = ar4.pullTimedHistory(start, end, params)
 
         print("Pulled {:d} records in {:f} seconds".format(len(results), (time.time()-tim0)))
 
