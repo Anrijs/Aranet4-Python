@@ -57,15 +57,15 @@ def main(argv):
     readings = ar4.getTotalReadings()
 
     print("--------------------------------------")
-    print("Connected:", name, "|", ver)
-    print("Updated",ago, "s ago. Intervals:", interval, "s")
-    print(readings, "total readings")
+    print("Connected: {:s} | {:s}".format(name,ver))
+    print("Updated {:d} s ago. Intervals: {:d} s".format(ago, interval))
+    print("{:d} total readings".format(readings))
     print("--------------------------------------")
-    print("CO2:         ", current["co2"], "ppm")
-    print("Temperature: ", current["temperature"], "C")
-    print("Humidity:    ", current["humidity"], "%")
-    print("Pressure:    ", current["pressure"], "hPa")
-    print("Battery:     ", current["battery"], "%")
+    print("CO2:         {:d} ppm".format(current["co2"]))
+    print("Temperature: {:.2f} C".format(current["temperature"]))
+    print("Humidity:    {:d} %".format(current["humidity"]))
+    print("Pressure:    {:.2f} hPa".format(current["pressure"]))
+    print("Battery:     {:d} %".format(current["battery"]))
     print("--------------------------------------")
 
     if url != "":
@@ -82,7 +82,7 @@ def main(argv):
             'battery':current["battery"]
             })
 
-        print("Pushing data:", r.text)
+        print("Pushing data: {:s}".format(r.text))
 
     if history:
         start = 0
@@ -101,15 +101,15 @@ def main(argv):
             # It takes about 5 seconds to read history for each parameter. 504->501->490 idx:4084-85-86  13:18pre
             # We will wait for next measurement to keep data arrays aligned
             tsleep = (interval - ago) + 5
-            print("Waiting",tsleep,"seconds for measurement")
+            print("Waiting {:d} seconds for measurement".format(tsleep))
             time.sleep(tsleep) # +5s padding
 
         tim0 = time.time()
 
-        print "Fetching sensor history..."
+        print("Fetching sensor history...")
         results = ar4.pullTimedHistory(start, end, params)
 
-        print("Pulled",len(results),"records in", (time.time()-tim0), "s")
+        print("Pulled {:d} records in {:f} seconds".format(len(results), (time.time()-tim0)))
 
         f = False
         if output != "":

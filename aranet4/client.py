@@ -17,12 +17,12 @@ class Aranet4HistoryDelegate(btle.DefaultDelegate):
     def handleNotification(self, handle, data):
         raw = bytearray(data)
         if self.handle != handle:
-            print("ERROR: invalid handle. Got", handle, ", expected", self.handle)
+            print("ERROR: invalid handle. Got {:04X}, expected {:04X}".format(handle, self.handle))
             return
 
         param = raw[0]
         if self.param != param:
-            print("ERROR: invalid handle. Got", param, ", expected", self.param)
+            print("ERROR: invalid parameter. Got {:02X}, expected {:02X}".format(param, self.param))
             return
 
         idx = raw[1] + (raw[2] << 8) - 1
@@ -133,12 +133,12 @@ class Aranet4:
     def getName(self):
         s = self.device.getServiceByUUID(self.GENERIC_SERVICE)
         c = s.getCharacteristics(self.GENERIC_READ_DEVICE_NAME)
-        return c[0].read()
+        return c[0].read().decode("utf-8")
 
     def getVersion(self):
         s = self.device.getServiceByUUID(self.COMMON_SERVICE)
         c = s.getCharacteristics(self.COMMON_READ_SW_REV)
-        return c[0].read()
+        return c[0].read().decode("utf-8")
 
     def pullTimedHistory(self, start=0x0001, end=0xFFFF, params="thpc"):
         interval = self.getInterval()
