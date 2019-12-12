@@ -47,13 +47,13 @@ class Aranet4HistoryDelegate(btle.DefaultDelegate):
 
     def _process(self, data, pos, param):
         if param == Aranet4.PARAM_TEMPERATURE:
-            return (data[pos] + (data[pos+1] << 8)) / 20.0
+            return Aranet4.checkReadingValues(Aranet4.PARAM_TEMPERATURE, data[pos] + (data[pos+1] << 8))
         elif param == Aranet4.PARAM_HUMIDITY:
-            return data[pos]
+            return Aranet4.checkReadingValues(Aranet4.PARAM_HUMIDITY, data[pos])
         elif param == Aranet4.PARAM_PRESSURE:
-            return (data[pos] + (data[pos+1] << 8)) / 10.0
+            return Aranet4.checkReadingValues(Aranet4.PARAM_PRESSURE, data[pos] + (data[pos+1] << 8))
         elif param == Aranet4.PARAM_CO2:
-            return data[pos] + (data[pos+1] << 8)
+            return Aranet4.checkReadingValues(Aranet4.PARAM_CO2, data[pos] + (data[pos+1] << 8))
         return None
 
 class Aranet4:
@@ -62,6 +62,9 @@ class Aranet4:
     PARAM_HUMIDITY = 2
     PARAM_PRESSURE = 3
     PARAM_CO2 = 4
+
+    # Param return value if no data
+    AR4_NO_DATA_FOR_PARAM = -1
 
     # Aranet UUIDs and handles
     # Services
@@ -104,8 +107,39 @@ class Aranet4:
         # This will not work. bluez returns up to 20 bytes per notification and rest of data is never received.
         # self.device.setMTU(247)
 
+    # While in CO2 calibration mode Aranet4 did not take new measurements and stores Magic numbers in measurement history.
+    # Here are history data converted with checking for Magic numbers.
+    @staticmethod
+    def checkReadingValues(metric, value):
+        if value == None:
+            return Aranet4.AR4_NO_DATA_FOR_PARAM
+
+        if metric == Aranet4.PARAM_CO2:
+            if (value & 0x8000) == 0x8000:
+                return Aranet4.AR4_NO_DATA_FOR_PARAM
+        elif metric == Aranet4.PARAM_TEMPERATURE:
+            if value == 0x4000:
+                return Aranet4.AR4_NO_DATA_FOR_PARAM
+            elif value > 0x8000:
+                # Negative temperatures are out of Aranet4 operating temperature range however device can return negative temperatures
+                # return ((0xFFFF - value) * (-1)) / 20.0
+                # For temperatures below 0 degrees return 0
+                return 0
+            else:
+                return value / 20.0
+        elif metric == Aranet4.PARAM_PRESSURE:
+            if (value & 0x8000) == 0x8000:
+                return Aranet4.AR4_NO_DATA_FOR_PARAM
+            else:
+                return value / 10.0
+        elif metric == Aranet4.PARAM_HUMIDITY:
+            if (value & 0x80) == 0x80:
+                return Aranet4.AR4_NO_DATA_FOR_PARAM
+
+        return value
+
     def currentReadings(self, details=False):
-        readings = {"temperature": -1, "humidity": -1, "pressure": -1, "co2": -1, "battery": -1, "ago": -1, "interval": -1}
+        readings = {"temperature": None, "humidity": None, "pressure": None, "co2": None, "battery": -1, "ago": -1, "interval": -1}
         s = self.device.getServiceByUUID(self.AR4_SERVICE)
         if details:
             c = s.getCharacteristics(self.AR4_READ_CURRENT_READINGS_DET)
@@ -114,10 +148,10 @@ class Aranet4:
 
         b = bytearray(c[0].read())
 
-        readings["co2"]         = self.le16(b, 0)
-        readings["temperature"] = self.le16(b, 2) / 20.0
-        readings["pressure"]    = self.le16(b, 4) / 10.0
-        readings["humidity"]    = b[6]
+        readings["co2"]         = Aranet4.checkReadingValues(self.PARAM_CO2, self.le16(b, 0))
+        readings["temperature"] = Aranet4.checkReadingValues(self.PARAM_TEMPERATURE, self.le16(b, 2))
+        readings["pressure"]    = Aranet4.checkReadingValues(self.PARAM_PRESSURE, self.le16(b, 4))
+        readings["humidity"]    = Aranet4.checkReadingValues(self.PARAM_HUMIDITY, b[6])
         readings["battery"]     = b[7]
 
         if details:
@@ -210,10 +244,10 @@ class Aranet4:
             r = {
                 "id": i,
                 "time": epoch,
-                "temperature":  resultsT.get(i, -1),
-                "pressure":  resultsP.get(i, -1),
-                "humidity":  resultsH.get(i, -1),
-                "co2":  resultsCO2.get(i, -1)
+                "temperature":  resultsT.get(i, self.AR4_NO_DATA_FOR_PARAM),
+                "pressure":  resultsP.get(i, self.AR4_NO_DATA_FOR_PARAM),
+                "humidity":  resultsH.get(i, self.AR4_NO_DATA_FOR_PARAM),
+                "co2":  resultsCO2.get(i, self.AR4_NO_DATA_FOR_PARAM)
             }
             results.append(r)
 
