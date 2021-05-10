@@ -7,12 +7,21 @@ sudo apt-get install libglib2.0-dev
 sudo pip install bluepy
 sudo pip install requests
 ```
-2. Pair device:
+2. Make sure that `bluetoothd` is running with `--experimental`. On systemd (*sigh*), try this:
+```
+sudo sed -i 's#/bluetoothd$#/bluetoothd --experimental#' /lib/systemd/system/bluetooth.service
+sudo systemctl daemon-reload
+sudo systemctl restart bluetooth
+```
+3. Pair device:
    1. Open bluetoothctl: `sudo bluetoothctl`
-   2. Scan devices: `scan on`
-   3. When found your device, stop scan: `scan off`
-   4. Pair device: `pair <DEVICE_ADDRESS>`
-   5. Exit from bluetooth ctl: `exit`
+   1. Enable passcode support: `agent KeyboardOnly`
+   1. Enable adapter: `power on`
+   1. Scan devices: `scan on`
+   1. When found your device, stop scan: `scan off`
+   1. Pair device: `pair <DEVICE_ADDRESS>`
+   1. Disconnect if automatically connected: `disconnect <DEVICE_ADDRESS>`
+   1. Exit from bluetooth ctl: `exit`
 
 ## aranet.py usage
 Run script:  `python aranet.py <DEVCE_ADDRESS> [OPTIONS]`
