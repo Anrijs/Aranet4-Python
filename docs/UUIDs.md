@@ -8,7 +8,7 @@ Service UUID: `f0cd1400-95da-4f4b-9ac8-aa55d312af0c`
 | `f0cd1503-95da-4f4b-9ac8-aa55d312af0c` | 0x002B | Current Readings                  | raw        | SS:SS:TT:TT:UU:UU:VV:WW:XX             | See readings table               |
 | `f0cd3001-95da-4f4b-9ac8-aa55d312af0c` | 0x0038 | Current Readings + Interval + Ago | raw        | SS:SS:TT:TT:UU:UU:VV:WW:XX:YY:YY:ZZ:ZZ | See readings table               |
 | `f0cd2002-95da-4f4b-9ac8-aa55d312af0c` | 0x002F | Read Interval                     | u16LE      | XX:XX                                  | Read interval in seconds         |
-| `f0cd1502-95da-4f4b-9ac8-aa55d312af0c` | 0x0032 | Sendor callibration data          | raw        | FF:FF:FF:FF:FF:FF:FF:FF                |                                  |
+| `f0cd1502-95da-4f4b-9ac8-aa55d312af0c` | 0x0032 | Sensor callibration data          | raw        | FF:FF:FF:FF:FF:FF:FF:FF                |                                  |
 | `f0cd2004-95da-4f4b-9ac8-aa55d312af0c` | 0x0036 | Seconds since update              | u16LE      | XX:XX                                  | Last reading time (seconds ago)  |
 | `f0cd2001-95da-4f4b-9ac8-aa55d312af0c` | 0x002D | Total readings                    | u16LE      | XX:XX                                  | XX:XX - Total readings in memory |
 
