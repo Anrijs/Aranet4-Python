@@ -4,11 +4,11 @@ Service UUID: `f0cd1400-95da-4f4b-9ac8-aa55d312af0c`
 
 | Characteristic UUID                  | Handle | Name                              | Type       | Return bytes                           | Values                           |
 |--------------------------------------|--------|-----------------------------------|------------|----------------------------------------|----------------------------------|
-| `f0cd1401-95da-4f4b-9ac8-aa55d312af0c` | 0x0027 | unknow, static?                   | raw        |                                        |                                  |
+| `f0cd1401-95da-4f4b-9ac8-aa55d312af0c` | 0x0027 | Sensor settings state             | raw        |                                        |                                  |
 | `f0cd1503-95da-4f4b-9ac8-aa55d312af0c` | 0x002B | Current Readings                  | raw        | SS:SS:TT:TT:UU:UU:VV:WW:XX             | See readings table               |
 | `f0cd3001-95da-4f4b-9ac8-aa55d312af0c` | 0x0038 | Current Readings + Interval + Ago | raw        | SS:SS:TT:TT:UU:UU:VV:WW:XX:YY:YY:ZZ:ZZ | See readings table               |
 | `f0cd2002-95da-4f4b-9ac8-aa55d312af0c` | 0x002F | Read Interval                     | u16LE      | XX:XX                                  | Read interval in seconds         |
-| `f0cd1502-95da-4f4b-9ac8-aa55d312af0c` | 0x0032 | unknow, static?                   | raw (8xFF) | FF:FF:FF:FF:FF:FF:FF:FF                |                                  |
+| `f0cd1502-95da-4f4b-9ac8-aa55d312af0c` | 0x0032 | Sendor callibration data          | raw        | FF:FF:FF:FF:FF:FF:FF:FF                |                                  |
 | `f0cd2004-95da-4f4b-9ac8-aa55d312af0c` | 0x0036 | Seconds since update              | u16LE      | XX:XX                                  | Last reading time (seconds ago)  |
 | `f0cd2001-95da-4f4b-9ac8-aa55d312af0c` | 0x002D | Total readings                    | u16LE      | XX:XX                                  | XX:XX - Total readings in memory |
 
@@ -21,7 +21,7 @@ Service UUID: `f0cd1400-95da-4f4b-9ac8-aa55d312af0c`
 | UU:UU     | Pressure                        | uLE16 | /10          |
 | VV        | Humidity                        | u8    | not required |
 | WW        | Battery                         | u8    | not required |
-| XX        | unknown                         | u8    | not required |
+| XX        | Status color (1 - green, 2 - yellow, 3 - red)  | u8    | not required |
 | YY:YY     | Interval in seconds             | uLE16 | not required |
 | ZZ:ZZ     | Last reading time (seconds ago) | uLE16 | not required |
 
