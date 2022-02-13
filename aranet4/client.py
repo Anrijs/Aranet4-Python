@@ -30,13 +30,6 @@ class Status(IntEnum):
     RED = 3
 
 
-def writeLE16(data: bytes, pos: int, value: int):
-    """Utility function to uint16 into byte array"""
-    data[pos] = (value) & 0x00FF
-    data[pos + 1] = (value >> 8) & 0x00FF
-    return data
-
-
 @dataclass
 class Aranet4HistoryDelegate:
     """
@@ -254,10 +247,9 @@ class Aranet4:
         if start < 1:
             start = 0x0001
 
-        val = bytearray.fromhex("820000000100ffff")
-        val[1] = param.value
-        val = writeLE16(val, 4, start)
-        val = writeLE16(val, 6, end)
+        header = 0x82
+        unknown = 0x00
+        val = struct.pack('<BBHHH', header, param.value, unknown, start, end)
 
         # register delegate
         delegate = Aranet4HistoryDelegate(
