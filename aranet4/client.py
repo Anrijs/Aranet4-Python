@@ -54,7 +54,7 @@ class Aranet4HistoryDelegate:
         Takes data returned and process it before storing
         """
         data_type, start, count = struct.unpack("<BHB", packet[:4])
-        print("Callback", data_type, start, count)
+        print("Callback", data_type, start, count, packet[4:])
         if start > self.size:
             self.client.reading = False
             return
@@ -286,15 +286,17 @@ async def _current_reading(address, cmd_args):
     return readings
 
 
-def get_current_readings(mac_address, cmd_args):
+def get_current_readings(mac_address: str, cmd_args: object) -> int:
+    """Get from the device how many results are stored"""
     return asyncio.run(_current_reading(mac_address, cmd_args))
 
 
 def calc_start_end(total_records: int, cmd_args):
     start = 0x0001
-    end = total_records - 1
+    end = total_records
     if cmd_args.l:
-        start = end - cmd_args.l
+        # Result is inclusive so reduce count back by 1
+        start = end - cmd_args.l + 1
 
     return start, end
 
@@ -337,7 +339,6 @@ async def _all_records(address, cmd_args):
     record = Record(dev_name, dev_version)
     for date, co2, temp, pres, hum in data:
         record.value.append(RecordItem(date, temp, hum, pres, co2))
-
     return record
 
 
