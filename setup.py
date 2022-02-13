@@ -18,4 +18,10 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    install_requires=[
+        'bleak',
+    ],
+    entry_points={
+        'console_scripts': ['aranetctl=aranet4.aranetctl:entry_point'],
+    },
 )
