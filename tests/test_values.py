@@ -64,9 +64,9 @@ class DataManipulation(unittest.TestCase):
         log_records = 12
         log_interval = 300
         expected = []
-        expeted_start = datetime.datetime(2000, 10, 11, 22, 59, 10)
+        expected_start = datetime.datetime(2000, 10, 11, 22, 59, 10)
         for idx in range(log_records):
-            expected.append(expeted_start + datetime.timedelta(seconds=log_interval * idx))
+            expected.append(expected_start + datetime.timedelta(seconds=log_interval * idx))
 
         now = datetime.datetime(2000, 10, 11, 23, 59, 30)
         times = client.log_times(now, log_records, log_interval, 20)
