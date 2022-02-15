@@ -1,6 +1,8 @@
 import argparse
+import csv
 from dataclasses import asdict
 import datetime
+from pathlib import Path
 import sys
 
 from aranet4 import client
@@ -40,7 +42,7 @@ def parse_args(ctl_args):
         type=datetime.date.fromisoformat,
         help="Records range end (UTC time, example: 2019-09-30T14:00:00Z",
     )
-    history.add_argument("-o", "--output", metavar="FILE", help="Save records to a file")
+    history.add_argument("-o", "--output", metavar="FILE", type=Path, help="Save records to a file")
     history.add_argument("-w", action="store_true")
     history.add_argument("-l", metavar="COUNT", type=int, help="Get <COUNT> last records")
     history.add_argument("-u", metavar="URL", help="Remote url for current value push")
@@ -64,6 +66,16 @@ def print_records(records):
     print("-" * char_repeat)
 
 
+def write_csv(filename, log_data):
+    with open(filename, 'w', newline='') as csvfile:
+        fieldnames = ['date', 'co2', 'temperature', 'humidity', 'pressure']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for line in log_data.value:
+            writer.writerow(asdict(line))
+
+
 def main(argv):
     args = parse_args(argv)
     if not args.records:
@@ -73,6 +85,8 @@ def main(argv):
     else:
         records = client.get_all_records(args.device_mac, args)
         print_records(records)
+        if args.output:
+            write_csv(args.output, records)
 
 
 def entry_point():

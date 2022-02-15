@@ -45,7 +45,6 @@ class Aranet4HistoryDelegate:
     result: list = field(default_factory=list)
 
     def __post_init__(self):
-        print(self.param.name)
         self.result = [-1] * self.size
 
     def handle_notification(self, sender: int, packet: bytes):
@@ -54,13 +53,12 @@ class Aranet4HistoryDelegate:
         Takes data returned and process it before storing
         """
         data_type, start, count = struct.unpack("<BHB", packet[:4])
-        print("Callback", data_type, start, count, packet[4:])
         if start > self.size:
             self.client.reading = False
             return
 
         if self.param != data_type:
-            print(
+            (
                 "ERROR: invalid parameter. Got {:02X}, expected {:02X}".format(
                     data_type, self.param
                 )
@@ -310,7 +308,7 @@ async def _all_records(address, cmd_args):
     now = datetime.datetime.utcnow().replace(microsecond=0)
     interval = await monitor.get_interval()
     next_log = interval - last_log
-    print("Next log in ", next_log, "seconds")
+    print(f"Next log will be taken in {next_log} seconds")
     if next_log < 10:
         print(f"Waiting {next_log} for next log...")
         await asyncio.sleep(next_log)
@@ -334,7 +332,6 @@ async def _all_records(address, cmd_args):
     )
     log_points = log_times(now, log_size, interval, last_log)
     finish = datetime.datetime.utcnow()
-    print(finish - now)
     data = zip(log_points, co2_values, temperature_val, pressure_val, humidity_val)
     record = Record(dev_name, dev_version)
     for date, co2, temp, pres, hum in data:
