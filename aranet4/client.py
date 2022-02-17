@@ -53,7 +53,7 @@ class Aranet4HistoryDelegate:
         Takes data returned and process it before storing
         """
         data_type, start, count = struct.unpack("<BHB", packet[:4])
-        if start > self.size:
+        if start > self.size or count == 0:
             self.client.reading = False
             return
 
@@ -144,6 +144,9 @@ class RecordItem:
 class Record:
     name: str
     version: str
+    records_on_device: int
+    filter_begin: int
+    filter_end: int
     value: List[RecordItem] = field(default_factory=list)
 
 
@@ -191,9 +194,11 @@ class Aranet4:
         self.reading = True
 
     async def connect(self):
+        """Connect to remote device"""
         await self.device.connect()
 
     async def current_readings(self, details: bool = False):
+        """Extract current readings from remote device"""
         readings = CurrentReading()
 
         if details:
@@ -211,26 +216,35 @@ class Aranet4:
         return readings
 
     async def get_interval(self) -> int:
+        """Get the value for how often datapoints are logged on device"""
         raw_bytes = await self.device.read_gatt_char(self.AR4_READ_INTERVAL)
         return int.from_bytes(raw_bytes, byteorder="little")
 
     async def get_name(self):
+        """Get name of remote device"""
         raw_bytes = await self.device.read_gatt_char(self.GENERIC_READ_DEVICE_NAME)
         return raw_bytes.decode("utf-8")
 
     async def get_version(self):
+        """Get firmware version of remote device"""
         raw_bytes = await self.device.read_gatt_char(self.COMMON_READ_SW_REV)
         return raw_bytes.decode("utf-8")
 
     async def get_seconds_since_update(self):
+        """
+        Get the value for how long (in seconds) has passed since last
+        datapoint was logged
+        """
         raw_bytes = await self.device.read_gatt_char(self.AR4_READ_SECONDS_SINCE_UPDATE)
         return int.from_bytes(raw_bytes, byteorder="little")
 
     async def get_total_readings(self):
+        """Return the count of how many datapoints are logged on device"""
         raw_bytes = await self.device.read_gatt_char(self.AR4_READ_TOTAL_READINGS)
         return int.from_bytes(raw_bytes, byteorder="little")
 
     async def get_last_measurement_date(self, use_epoch: bool = False):
+        """Calculate the time the last datapoint was logged"""
         ago = await self.get_seconds_since_update()
         now = datetime.datetime.utcnow().replace(microsecond=0)
         delta_ago = datetime.timedelta(seconds=ago)
@@ -242,12 +256,21 @@ class Aranet4:
     async def get_records(
         self, param: Param, log_size: int, start: int = 0x0001, end: int = 0xFFFF
     ):
+        """
+        Return ordered list of datapoints for requested parameter.
+        List will be length of "total datapoints". If index is outside `start`
+        and `end` request then default of `-1` is returned for those datapoints.
+        """
         if start < 1:
             start = 0x0001
 
         header = 0x82
         unknown = 0x00
         val = struct.pack('<BBHHH', header, param.value, unknown, start, end)
+        # Request command: b'\x82\x01\x00\x00\xde\x01\x3d\x05'
+        # for temperature from start at 1 and ending 2016
+        # Request command: b'\x82\x04\x00\x00\x01\x00\xe0\x07'
+        # for co2 from start at 478 and end 1341
 
         # register delegate
         delegate = Aranet4HistoryDelegate(
@@ -260,13 +283,13 @@ class Aranet4:
             self.AR4_READ_HISTORY_READINGS, delegate.handle_notification
         )
         while self.reading:
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.1)
         await self.device.stop_notify(self.AR4_READ_HISTORY_READINGS)
-
         return delegate.result
 
 
 def log_times(now, total, interval, ago):
+    """Calculate the actual times datapoints were logged on device"""
     times = []
     start = now - datetime.timedelta(seconds=(total * interval) + ago)
     for idx in range(total):
@@ -275,6 +298,7 @@ def log_times(now, total, interval, ago):
 
 
 async def _current_reading(address, cmd_args):
+    """Populate and return `client.CurrentReading` dataclass"""
     monitor = Aranet4(address=address)
     await monitor.connect()
     readings = await monitor.current_readings(details=True)
@@ -284,30 +308,52 @@ async def _current_reading(address, cmd_args):
     return readings
 
 
-def get_current_readings(mac_address: str, cmd_args: object) -> int:
-    """Get from the device how many results are stored"""
+def get_current_readings(mac_address: str, cmd_args: object) -> CurrentReading:
+    """Get from the device the current measurements"""
     return asyncio.run(_current_reading(mac_address, cmd_args))
 
 
-def calc_start_end(total_records: int, cmd_args):
+def calc_start_end(datapoint_times: int, cmd_args):
+    """Apply argument filters to get required start and end datapoint"""
     start = 0x0001
-    end = total_records
+    end = len(datapoint_times)
     if cmd_args.l:
         # Result is inclusive so reduce count back by 1
         start = end - cmd_args.l + 1
-
+    if cmd_args.start:
+        time_start = -1
+        for idx, timestamp in enumerate(datapoint_times, start=1):
+            if cmd_args.start < timestamp:
+                time_start = idx
+                break
+        if 0 < time_start < end:
+            start = time_start
+    if cmd_args.end:
+        time_end = -1
+        for idx, timestamp in enumerate(datapoint_times, start=1):
+            if timestamp < cmd_args.end:
+                time_end = idx
+            else:
+                break
+        if start < time_end < end:
+            end = time_end
     return start, end
 
 
 async def _all_records(address, cmd_args):
+    """Get stored datapoints from device. Apply any filters requested"""
+    # Connect
     monitor = Aranet4(address=address)
     await monitor.connect()
+    # Get Basic information
     dev_name = await monitor.get_name()
     dev_version = await monitor.get_version()
     last_log = await monitor.get_seconds_since_update()
     now = datetime.datetime.utcnow().replace(microsecond=0)
     interval = await monitor.get_interval()
     next_log = interval - last_log
+    # Decide if there is enough time to read all the data
+    # before the next datapoint in logged.
     print(f"Next log will be taken in {next_log} seconds")
     if next_log < 10:
         print(f"Waiting {next_log} for next log...")
@@ -317,7 +363,9 @@ async def _all_records(address, cmd_args):
         now = datetime.datetime.utcnow().replace(microsecond=0)
 
     log_size = await monitor.get_total_readings()
-    begin, end = calc_start_end(log_size, cmd_args)
+    log_points = log_times(now, log_size, interval, last_log)
+    begin, end = calc_start_end(log_points, cmd_args)
+    # Read datapoint history from device
     temperature_val = await monitor.get_records(
         Param.TEMPERATURE, log_size=log_size, start=begin, end=end
     )
@@ -330,14 +378,14 @@ async def _all_records(address, cmd_args):
     co2_values = await monitor.get_records(
         Param.CO2, log_size=log_size, start=begin, end=end
     )
-    log_points = log_times(now, log_size, interval, last_log)
-    finish = datetime.datetime.utcnow()
+    # Store returned data in dataclass
     data = zip(log_points, co2_values, temperature_val, pressure_val, humidity_val)
-    record = Record(dev_name, dev_version)
+    record = Record(dev_name, dev_version, log_size, begin, end)
     for date, co2, temp, pres, hum in data:
         record.value.append(RecordItem(date, temp, hum, pres, co2))
     return record
 
 
 def get_all_records(mac_address, cmd_args):
+    """Get stored datapoints from device. Apply any filters requested"""
     return asyncio.run(_all_records(mac_address, cmd_args))

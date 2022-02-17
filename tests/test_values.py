@@ -36,6 +36,8 @@ device_readings = """
 --------------------------------------
 
 """
+base_args = dict(device_mac='11:22:33:44:55:66', end=None, l=None,
+                        output=None, records=False, start=None, u=None, w=False)
 
 
 class DataManipulation(unittest.TestCase):
@@ -45,16 +47,38 @@ class DataManipulation(unittest.TestCase):
             aranetctl.main(["C7:18:1E:21:F4:87"])
             self.assertEqual(device_readings, fake_out.getvalue())
 
-    def test_parse_args(self):
-        expected = dict(device_mac='11:22:33:44:55:66', end=None, l=None,
-                        output=None, records=False, start=None, u=None, w=False)
+    def test_parse_args1(self):
+        expected = base_args.copy()
         args = aranetctl.parse_args(["11:22:33:44:55:66"])
+        self.assertDictEqual(expected, args.__dict__)
+
+    def test_parse_args2(self):
+        expected = base_args.copy()
+        expected['records'] = True
+        args = aranetctl.parse_args("11:22:33:44:55:66 -r".split())
+        self.assertDictEqual(expected, args.__dict__)
+
+    def test_parse_args3(self):
+        expected = base_args.copy()
+        expected['records'] = True
+        expected['l'] = 30
+        args = aranetctl.parse_args("11:22:33:44:55:66 -r -l 30".split())
+        self.assertDictEqual(expected, args.__dict__)
+
+    def test_parse_args4(self):
+        expected = base_args.copy()
+        expected['records'] = True
+        expected['start'] = datetime.datetime(2022, 2, 14, 15, 16)
+        expected['end'] = datetime.datetime(2022, 2, 17, 18, 19)
+        args = aranetctl.parse_args(
+            "11:22:33:44:55:66 -r -s 2022-02-14T15:16 -e 2022-02-17T18:19".split())
         self.assertDictEqual(expected, args.__dict__)
 
     def test_calc_log_last_n(self):
         args = aranetctl.parse_args("11:22:33:44:55:66 -r -l 20".split())
-        start, end = client.calc_start_end(200, args)
-        # Requested numbers are inclusive so difference in 19 although
+        mock_points = [datetime.datetime.utcnow()] * 200
+        start, end = client.calc_start_end(mock_points, args)
+        # Requested numbers are inclusive so difference is 19 although
         # 20 data points have been requested
         self.assertEqual(181, start)
         self.assertEqual(200, end)

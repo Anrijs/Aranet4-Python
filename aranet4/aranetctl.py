@@ -32,14 +32,14 @@ def parse_args(ctl_args):
         "-s",
         "--start",
         metavar="DATE",
-        type=datetime.date.fromisoformat,
+        type=datetime.datetime.fromisoformat,
         help="Records range start (UTC time, example: 2019-09-29T14:00:00Z",
     )
     history.add_argument(
         "-e",
         "--end",
         metavar="DATE",
-        type=datetime.date.fromisoformat,
+        type=datetime.datetime.fromisoformat,
         help="Records range end (UTC time, example: 2019-09-30T14:00:00Z",
     )
     history.add_argument("-o", "--output", metavar="FILE", type=Path, help="Save records to a file")
@@ -51,15 +51,17 @@ def parse_args(ctl_args):
 
 
 def print_records(records):
-    char_repeat = 55
+    char_repeat = 60
     print("-" * char_repeat)
     print(f"{'Device Name':<15}: {records.name:>20}")
     print(f"{'Device Version':<15}: {records.version:>20}")
     print("-" * char_repeat)
-    print(f"{'date': ^20} | {'co2':^6} | temp | hum | pressure")
+    print(f"{'id': ^4} | {'date': ^20} | {'co2':^6} | temp | hum | pressure")
     print("-" * char_repeat)
-    for line in records.value:
+    filtered_values = records.value[records.filter_begin-1:records.filter_end]
+    for record_id, line in enumerate(filtered_values, start=records.filter_begin):
         print(
+            f"{record_id:>4d} |"
             f" {line.date.isoformat()} | {line.co2:>6d} |"
             f" {line.temperature:>4.1f} | {line.humidity:>3d} |"
             f" {line.pressure:>6.1f}")
@@ -67,6 +69,11 @@ def print_records(records):
 
 
 def write_csv(filename, log_data):
+    """
+    Output `client.Record` dataclass to csv file
+    :param filename: file name
+    :param log_data: `client.Record` data object
+    """
     with open(filename, 'w', newline='') as csvfile:
         fieldnames = ['date', 'co2', 'temperature', 'humidity', 'pressure']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
