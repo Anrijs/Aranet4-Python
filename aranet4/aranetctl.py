@@ -35,14 +35,14 @@ def parse_args(ctl_args):
         "--start",
         metavar="DATE",
         type=datetime.datetime.fromisoformat,
-        help="Records range start (UTC time, example: 2019-09-29T14:00:00Z",
+        help="Records range start (UTC time, example: 2019-09-29T14:00:00",
     )
     history.add_argument(
         "-e",
         "--end",
         metavar="DATE",
         type=datetime.datetime.fromisoformat,
-        help="Records range end (UTC time, example: 2019-09-30T14:00:00Z",
+        help="Records range end (UTC time, example: 2019-09-30T14:00:00",
     )
     history.add_argument(
         "-o", "--output", metavar="FILE", type=Path, help="Save records to a file"
@@ -85,7 +85,7 @@ def parse_args(ctl_args):
 
 
 def print_records(records):
-    print("Printing:", records.filter)
+    """Format log records to be printed to screen"""
     char_repeat = 28
     if records.filter.incl_co2:
         char_repeat += 9

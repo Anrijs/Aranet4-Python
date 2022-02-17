@@ -365,9 +365,9 @@ async def _all_records(address, cmd_args):
     next_log = interval - last_log
     # Decide if there is enough time to read all the data
     # before the next datapoint in logged.
-    print(f"Next log will be taken in {next_log} seconds")
+    print(f"Next data point will be logged in {next_log} seconds")
     if next_log < 10:
-        print(f"Waiting {next_log} for next log...")
+        print(f"Waiting {next_log} for next datapoint to be taken...")
         await asyncio.sleep(next_log)
         # there was another log so update the numbers
         last_log = await monitor.get_seconds_since_update()
