@@ -26,8 +26,10 @@ format_str = """
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
     parser.add_argument("device_mac", help="Aranet4 Bluetooth Address")
-    parser.add_argument("-r", "--records", action="store_true", help="Fetch historical log records")
-    history = parser.add_argument_group('Filter History Log Records')
+    parser.add_argument(
+        "-r", "--records", action="store_true", help="Fetch historical log records"
+    )
+    history = parser.add_argument_group("Filter History Log Records")
     history.add_argument(
         "-s",
         "--start",
@@ -42,29 +44,84 @@ def parse_args(ctl_args):
         type=datetime.datetime.fromisoformat,
         help="Records range end (UTC time, example: 2019-09-30T14:00:00Z",
     )
-    history.add_argument("-o", "--output", metavar="FILE", type=Path, help="Save records to a file")
+    history.add_argument(
+        "-o", "--output", metavar="FILE", type=Path, help="Save records to a file"
+    )
     history.add_argument("-w", action="store_true")
-    history.add_argument("-l", metavar="COUNT", type=int, help="Get <COUNT> last records")
+    history.add_argument(
+        "-l", metavar="COUNT", type=int, help="Get <COUNT> last records"
+    )
     history.add_argument("-u", metavar="URL", help="Remote url for current value push")
+    history.add_argument(
+        "--xt",
+        dest="temp",
+        default=True,
+        action="store_false",
+        help="Don't get temperature records",
+    )
+    history.add_argument(
+        "--xh",
+        dest="humi",
+        default=True,
+        action="store_false",
+        help="Don't get humidity records",
+    )
+    history.add_argument(
+        "--xp",
+        dest="pres",
+        default=True,
+        action="store_false",
+        help="Don't get pressure records",
+    )
+    history.add_argument(
+        "--xc",
+        dest="co2",
+        default=True,
+        action="store_false",
+        help="Don't get co2 records",
+    )
 
     return parser.parse_args(ctl_args)
 
 
 def print_records(records):
-    char_repeat = 60
+    print("Printing:", records.filter)
+    char_repeat = 28
+    if records.filter.incl_co2:
+        char_repeat += 9
+    if records.filter.incl_temperature:
+        char_repeat += 7
+    if records.filter.incl_humidity:
+        char_repeat += 6
+    if records.filter.incl_pressure:
+        char_repeat += 11
     print("-" * char_repeat)
     print(f"{'Device Name':<15}: {records.name:>20}")
     print(f"{'Device Version':<15}: {records.version:>20}")
     print("-" * char_repeat)
-    print(f"{'id': ^4} | {'date': ^20} | {'co2':^6} | temp | hum | pressure")
+    print(f"{'id': ^4} | {'date': ^19} |", end=""),
+    if records.filter.incl_co2:
+        print(f" {'co2':^6} |", end=""),
+    if records.filter.incl_temperature:
+        print(" temp |", end="")
+    if records.filter.incl_humidity:
+        print(" hum |", end="")
+    if records.filter.incl_pressure:
+        print(" pressure |", end="")
+    print("")
     print("-" * char_repeat)
-    filtered_values = records.value[records.filter_begin-1:records.filter_end]
-    for record_id, line in enumerate(filtered_values, start=records.filter_begin):
-        print(
-            f"{record_id:>4d} |"
-            f" {line.date.isoformat()} | {line.co2:>6d} |"
-            f" {line.temperature:>4.1f} | {line.humidity:>3d} |"
-            f" {line.pressure:>6.1f}")
+    filtered_values = records.value[records.filter.begin - 1 : records.filter.end]
+    for record_id, line in enumerate(filtered_values, start=records.filter.begin):
+        print(f"{record_id:>4d} | {line.date.isoformat()} |", end="")
+        if records.filter.incl_co2:
+            print(f" {line.co2:>6d} |", end="")
+        if records.filter.incl_temperature:
+            print(f" {line.temperature:>4.1f} |", end="")
+        if records.filter.incl_humidity:
+            print(f" {line.humidity:>3d} |", end="")
+        if records.filter.incl_pressure:
+            print(f" {line.pressure:>8.1f} |", end="")
+        print("")
     print("-" * char_repeat)
 
 
@@ -74,12 +131,24 @@ def write_csv(filename, log_data):
     :param filename: file name
     :param log_data: `client.Record` data object
     """
-    with open(filename, 'w', newline='') as csvfile:
-        fieldnames = ['date', 'co2', 'temperature', 'humidity', 'pressure']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    with open(filename, "w", newline="") as csvfile:
+        fieldnames = ["date"]
+        if log_data.filter.incl_co2:
+            fieldnames.append("co2")
+        if log_data.filter.incl_temperature:
+            fieldnames.append("temperature")
+        if log_data.filter.incl_humidity:
+            fieldnames.append("humidity")
+        if log_data.filter.incl_pressure:
+            fieldnames.append("pressure")
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction="ignore")
 
         writer.writeheader()
-        for line in log_data.value:
+
+        filtered_values = log_data.value[
+            log_data.filter.begin - 1 : log_data.filter.end
+        ]
+        for line in filtered_values:
             writer.writerow(asdict(line))
 
 

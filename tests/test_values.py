@@ -36,14 +36,26 @@ device_readings = """
 --------------------------------------
 
 """
-base_args = dict(device_mac='11:22:33:44:55:66', end=None, l=None,
-                        output=None, records=False, start=None, u=None, w=False)
+base_args = dict(
+    device_mac="11:22:33:44:55:66",
+    end=None,
+    l=None,
+    output=None,
+    records=False,
+    start=None,
+    u=None,
+    w=False,
+    co2=True,
+    humi=True,
+    pres=True,
+    temp=True,
+)
 
 
 class DataManipulation(unittest.TestCase):
     def test_current_values(self):
         client.get_current_readings = mock.MagicMock(return_value=result)
-        with unittest.mock.patch('sys.stdout', new=io.StringIO()) as fake_out:
+        with unittest.mock.patch("sys.stdout", new=io.StringIO()) as fake_out:
             aranetctl.main(["C7:18:1E:21:F4:87"])
             self.assertEqual(device_readings, fake_out.getvalue())
 
@@ -54,24 +66,32 @@ class DataManipulation(unittest.TestCase):
 
     def test_parse_args2(self):
         expected = base_args.copy()
-        expected['records'] = True
+        expected["records"] = True
         args = aranetctl.parse_args("11:22:33:44:55:66 -r".split())
         self.assertDictEqual(expected, args.__dict__)
 
     def test_parse_args3(self):
         expected = base_args.copy()
-        expected['records'] = True
-        expected['l'] = 30
+        expected["records"] = True
+        expected["l"] = 30
         args = aranetctl.parse_args("11:22:33:44:55:66 -r -l 30".split())
         self.assertDictEqual(expected, args.__dict__)
 
     def test_parse_args4(self):
         expected = base_args.copy()
-        expected['records'] = True
-        expected['start'] = datetime.datetime(2022, 2, 14, 15, 16)
-        expected['end'] = datetime.datetime(2022, 2, 17, 18, 19)
+        expected["records"] = True
+        expected["start"] = datetime.datetime(2022, 2, 14, 15, 16)
+        expected["end"] = datetime.datetime(2022, 2, 17, 18, 19)
         args = aranetctl.parse_args(
-            "11:22:33:44:55:66 -r -s 2022-02-14T15:16 -e 2022-02-17T18:19".split())
+            "11:22:33:44:55:66 -r -s 2022-02-14T15:16 -e 2022-02-17T18:19".split()
+        )
+        self.assertDictEqual(expected, args.__dict__)
+
+    def test_parse_args3(self):
+        expected = base_args.copy()
+        expected["records"] = True
+        expected["temp"] = False
+        args = aranetctl.parse_args("11:22:33:44:55:66 -r --xt".split())
         self.assertDictEqual(expected, args.__dict__)
 
     def test_calc_log_last_n(self):
@@ -90,7 +110,9 @@ class DataManipulation(unittest.TestCase):
         expected = []
         expected_start = datetime.datetime(2000, 10, 11, 22, 59, 10)
         for idx in range(log_records):
-            expected.append(expected_start + datetime.timedelta(seconds=log_interval * idx))
+            expected.append(
+                expected_start + datetime.timedelta(seconds=log_interval * idx)
+            )
 
         now = datetime.datetime(2000, 10, 11, 23, 59, 30)
         times = client.log_times(now, log_records, log_interval, 20)

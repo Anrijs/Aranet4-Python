@@ -141,12 +141,23 @@ class RecordItem:
 
 
 @dataclass
+class Filter:
+    """dataclass to store log filter information"""
+
+    begin: int
+    end: int
+    incl_temperature: bool
+    incl_humidity: bool
+    incl_pressure: bool
+    incl_co2: bool
+
+
+@dataclass
 class Record:
     name: str
     version: str
     records_on_device: int
-    filter_begin: int
-    filter_end: int
+    filter: Filter
     value: List[RecordItem] = field(default_factory=list)
 
 
@@ -266,7 +277,7 @@ class Aranet4:
 
         header = 0x82
         unknown = 0x00
-        val = struct.pack('<BBHHH', header, param.value, unknown, start, end)
+        val = struct.pack("<BBHHH", header, param.value, unknown, start, end)
         # Request command: b'\x82\x01\x00\x00\xde\x01\x3d\x05'
         # for temperature from start at 1 and ending 2016
         # Request command: b'\x82\x04\x00\x00\x01\x00\xe0\x07'
@@ -380,7 +391,10 @@ async def _all_records(address, cmd_args):
     )
     # Store returned data in dataclass
     data = zip(log_points, co2_values, temperature_val, pressure_val, humidity_val)
-    record = Record(dev_name, dev_version, log_size, begin, end)
+    rec_filter = Filter(
+        begin, end, cmd_args.temp, cmd_args.humi, cmd_args.pres, cmd_args.co2
+    )
+    record = Record(dev_name, dev_version, log_size, rec_filter)
     for date, co2, temp, pres, hum in data:
         record.value.append(RecordItem(date, temp, hum, pres, co2))
     return record
