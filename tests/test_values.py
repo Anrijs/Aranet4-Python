@@ -96,7 +96,7 @@ class DataManipulation(unittest.TestCase):
 
     def test_calc_log_last_n(self):
         mock_points = [datetime.datetime.utcnow()] * 200
-        start, end = client.calc_start_end(mock_points, {'last': 20})
+        start, end = client._calc_start_end(mock_points, {'last': 20})
         # Requested numbers are inclusive so difference is 19 although
         # 20 data points have been requested
         self.assertEqual(181, start)
@@ -114,7 +114,7 @@ class DataManipulation(unittest.TestCase):
             )
 
         now = datetime.datetime(2000, 10, 11, 23, 59, 30)
-        times = client.log_times(now, log_records, log_interval, 20)
+        times = client._log_times(now, log_records, log_interval, 20)
         self.assertListEqual(expected, times)
 
 

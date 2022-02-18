@@ -305,7 +305,7 @@ class Aranet4:
         return delegate.result
 
 
-def log_times(now, total, interval, ago):
+def _log_times(now, total, interval, ago):
     """Calculate the actual times datapoints were logged on device"""
     times = []
     start = now - datetime.timedelta(seconds=((total - 1) * interval) + ago)
@@ -314,23 +314,7 @@ def log_times(now, total, interval, ago):
     return times
 
 
-async def _current_reading(address):
-    """Populate and return `client.CurrentReading` dataclass"""
-    monitor = Aranet4(address=address)
-    await monitor.connect()
-    readings = await monitor.current_readings(details=True)
-    readings.name = await monitor.get_name()
-    readings.version = await monitor.get_version()
-    readings.stored = await monitor.get_total_readings()
-    return readings
-
-
-def get_current_readings(mac_address: str) -> CurrentReading:
-    """Get from the device the current measurements"""
-    return asyncio.run(_current_reading(mac_address))
-
-
-def calc_start_end(datapoint_times: int, entry_filter):
+def _calc_start_end(datapoint_times: int, entry_filter):
     """
     Apply filters to get required start and end datapoint.
     `entry_filter` is a dictionary that can have the following values:
@@ -366,6 +350,22 @@ def calc_start_end(datapoint_times: int, entry_filter):
     return start, end
 
 
+async def _current_reading(address):
+    """Populate and return `client.CurrentReading` dataclass"""
+    monitor = Aranet4(address=address)
+    await monitor.connect()
+    readings = await monitor.current_readings(details=True)
+    readings.name = await monitor.get_name()
+    readings.version = await monitor.get_version()
+    readings.stored = await monitor.get_total_readings()
+    return readings
+
+
+def get_current_readings(mac_address: str) -> CurrentReading:
+    """Get from the device the current measurements"""
+    return asyncio.run(_current_reading(mac_address))
+
+
 async def _all_records(address, entry_filter):
     """
     Get stored data points from device. Apply any filters requested
@@ -399,8 +399,8 @@ async def _all_records(address, entry_filter):
         now = datetime.datetime.utcnow().replace(microsecond=0)
 
     log_size = await monitor.get_total_readings()
-    log_points = log_times(now, log_size, interval, last_log)
-    begin, end = calc_start_end(log_points, entry_filter)
+    log_points = _log_times(now, log_size, interval, last_log)
+    begin, end = _calc_start_end(log_points, entry_filter)
     rec_filter = Filter(
         begin,
         end,
@@ -442,6 +442,16 @@ async def _all_records(address, entry_filter):
     return record
 
 
-def get_all_records(mac_address, cmd_args):
-    """Get stored datapoints from device. Apply any filters requested"""
-    return asyncio.run(_all_records(mac_address, cmd_args))
+def get_all_records(mac_address: str, entry_filter: dict) -> Record:
+    """
+    Get stored datapoints from device. Apply any filters requested
+    `entry_filter` is a dictionary that can have the following values:
+        `l`: int : Get last n entries
+        `start`: datetime : Get entries after specified time
+        `end`: datetime : Get entries before specified time
+        `temp`: bool : Get temperature data points (default = True)
+        `humi`: bool : Get humidity data points (default = True)
+        `pres`: bool : Get pressure data points (default = True)
+        `co2`: bool : Get co2 data points (default = True)
+    """
+    return asyncio.run(_all_records(mac_address, entry_filter))
