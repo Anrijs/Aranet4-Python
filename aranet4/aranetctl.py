@@ -4,6 +4,7 @@ from dataclasses import asdict
 import datetime
 from pathlib import Path
 import sys
+from time import sleep
 
 from aranet4 import client
 
@@ -47,11 +48,19 @@ def parse_args(ctl_args):
     history.add_argument(
         "-o", "--output", metavar="FILE", type=Path, help="Save records to a file"
     )
-    history.add_argument("-w", action="store_true")
     history.add_argument(
-        "-l", metavar="COUNT", type=int, help="Get <COUNT> last records"
+        "-w",
+        "--wait",
+        action="store_true",
+        default=False,
+        help="Wait until new data point available",
     )
-    history.add_argument("-u", metavar="URL", help="Remote url for current value push")
+    history.add_argument(
+        "-l", "--last", metavar="COUNT", type=int, help="Get <COUNT> last records"
+    )
+    history.add_argument(
+        "-u", "--url", metavar="URL", help="Remote url for current value push"
+    )
     history.add_argument(
         "--xt",
         dest="temp",
@@ -152,17 +161,30 @@ def write_csv(filename, log_data):
             writer.writerow(asdict(line))
 
 
+def wait_for_new_record(address):
+    current_vals = client.get_current_readings(address)
+    wait_time = current_vals.interval - current_vals.ago
+    for secs in range(wait_time, 0, -1):
+        sleep(1)
+        print(f"Next data point in {secs}...", end="\r")
+
+
 def main(argv):
     args = parse_args(argv)
     if args.records:
+        if args.wait:
+            wait_for_new_record(args.device_mac)
         records = client.get_all_records(args.device_mac, vars(args))
         print_records(records)
         if args.output:
             write_csv(args.output, records)
+        if args.url:
+            pass
     else:
         current = client.get_current_readings(args.device_mac)
         s = format_str.format(current=current)
         print(s)
+
 
 def entry_point():
     main(argv=sys.argv[1:])

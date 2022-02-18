@@ -306,7 +306,7 @@ class Aranet4:
 def log_times(now, total, interval, ago):
     """Calculate the actual times datapoints were logged on device"""
     times = []
-    start = now - datetime.timedelta(seconds=(total * interval) + ago)
+    start = now - datetime.timedelta(seconds=((total - 1) * interval) + ago)
     for idx in range(total):
         times.append(start + datetime.timedelta(seconds=interval * idx))
     return times
@@ -336,7 +336,7 @@ def calc_start_end(datapoint_times: int, entry_filter):
         `start`: datetime : Get entries after specified time
         `end`: datetime : Get entries before specified time
     """
-    last_n_entries = entry_filter.get("l")
+    last_n_entries = entry_filter.get("last")
     filter_start = entry_filter.get("start")
     filter_end = entry_filter.get("end")
     start = 0x0001
