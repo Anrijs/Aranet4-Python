@@ -45,7 +45,7 @@ class Aranet4HistoryDelegate:
     result: list = field(default_factory=list)
 
     def __post_init__(self):
-        self.result = [-1] * self.size
+        self.result = _empty_reading(self.size)
 
     def handle_notification(self, sender: int, packet: bytes):
         """
@@ -159,6 +159,10 @@ class Record:
     records_on_device: int
     filter: Filter
     value: List[RecordItem] = field(default_factory=list)
+
+
+def _empty_reading(size):
+    return [-1] * size
 
 
 class Aranet4:
@@ -308,7 +312,7 @@ def log_times(now, total, interval, ago):
     return times
 
 
-async def _current_reading(address, cmd_args):
+async def _current_reading(address):
     """Populate and return `client.CurrentReading` dataclass"""
     monitor = Aranet4(address=address)
     await monitor.connect()
@@ -319,30 +323,39 @@ async def _current_reading(address, cmd_args):
     return readings
 
 
-def get_current_readings(mac_address: str, cmd_args: object) -> CurrentReading:
+def get_current_readings(mac_address: str) -> CurrentReading:
     """Get from the device the current measurements"""
-    return asyncio.run(_current_reading(mac_address, cmd_args))
+    return asyncio.run(_current_reading(mac_address))
 
 
-def calc_start_end(datapoint_times: int, cmd_args):
-    """Apply argument filters to get required start and end datapoint"""
+def calc_start_end(datapoint_times: int, entry_filter):
+    """
+    Apply filters to get required start and end datapoint.
+    `entry_filter` is a dictionary that can have the following values:
+        `l`: int : Get last n entries
+        `start`: datetime : Get entries after specified time
+        `end`: datetime : Get entries before specified time
+    """
+    last_n_entries = entry_filter.get("l")
+    filter_start = entry_filter.get("start")
+    filter_end = entry_filter.get("end")
     start = 0x0001
     end = len(datapoint_times)
-    if cmd_args.l:
+    if last_n_entries:
         # Result is inclusive so reduce count back by 1
-        start = end - cmd_args.l + 1
-    if cmd_args.start:
+        start = end - last_n_entries + 1
+    if filter_start:
         time_start = -1
         for idx, timestamp in enumerate(datapoint_times, start=1):
-            if cmd_args.start < timestamp:
+            if filter_start < timestamp:
                 time_start = idx
                 break
         if 0 < time_start < end:
             start = time_start
-    if cmd_args.end:
+    if filter_end:
         time_end = -1
         for idx, timestamp in enumerate(datapoint_times, start=1):
-            if timestamp < cmd_args.end:
+            if timestamp < filter_end:
                 time_end = idx
             else:
                 break
@@ -351,8 +364,18 @@ def calc_start_end(datapoint_times: int, cmd_args):
     return start, end
 
 
-async def _all_records(address, cmd_args):
-    """Get stored datapoints from device. Apply any filters requested"""
+async def _all_records(address, entry_filter):
+    """
+    Get stored data points from device. Apply any filters requested
+    `entry_filter` is a dictionary that can have the following values:
+        `l`: int : Get last n entries
+        `start`: datetime : Get entries after specified time
+        `end`: datetime : Get entries before specified time
+        `temp`: bool : Get temperature data points (default = True)
+        `humi`: bool : Get humidity data points (default = True)
+        `pres`: bool : Get pressure data points (default = True)
+        `co2`: bool : Get co2 data points (default = True)
+    """
     # Connect
     monitor = Aranet4(address=address)
     await monitor.connect()
@@ -375,25 +398,42 @@ async def _all_records(address, cmd_args):
 
     log_size = await monitor.get_total_readings()
     log_points = log_times(now, log_size, interval, last_log)
-    begin, end = calc_start_end(log_points, cmd_args)
-    # Read datapoint history from device
-    temperature_val = await monitor.get_records(
-        Param.TEMPERATURE, log_size=log_size, start=begin, end=end
-    )
-    humidity_val = await monitor.get_records(
-        Param.HUMIDITY, log_size=log_size, start=begin, end=end
-    )
-    pressure_val = await monitor.get_records(
-        Param.PRESSURE, log_size=log_size, start=begin, end=end
-    )
-    co2_values = await monitor.get_records(
-        Param.CO2, log_size=log_size, start=begin, end=end
-    )
-    # Store returned data in dataclass
-    data = zip(log_points, co2_values, temperature_val, pressure_val, humidity_val)
+    begin, end = calc_start_end(log_points, entry_filter)
     rec_filter = Filter(
-        begin, end, cmd_args.temp, cmd_args.humi, cmd_args.pres, cmd_args.co2
+        begin,
+        end,
+        entry_filter.get("temp", True),
+        entry_filter.get("humi", True),
+        entry_filter.get("pres", True),
+        entry_filter.get("co2", True),
     )
+    # Read datapoint history from device
+    if rec_filter.incl_temperature:
+        temperature_val = await monitor.get_records(
+            Param.TEMPERATURE, log_size=log_size, start=begin, end=end
+        )
+    else:
+        temperature_val = _empty_reading(log_size)
+    if rec_filter.incl_humidity:
+        humidity_val = await monitor.get_records(
+            Param.HUMIDITY, log_size=log_size, start=begin, end=end
+        )
+    else:
+        humidity_val = _empty_reading(log_size)
+    if rec_filter.incl_pressure:
+        pressure_val = await monitor.get_records(
+            Param.PRESSURE, log_size=log_size, start=begin, end=end
+        )
+    else:
+        pressure_val = _empty_reading(log_size)
+    if rec_filter.incl_co2:
+        co2_val = await monitor.get_records(
+            Param.CO2, log_size=log_size, start=begin, end=end
+        )
+    else:
+        co2_val = _empty_reading(log_size)
+    # Store returned data in dataclass
+    data = zip(log_points, co2_val, temperature_val, pressure_val, humidity_val)
     record = Record(dev_name, dev_version, log_size, rec_filter)
     for date, co2, temp, pres, hum in data:
         record.value.append(RecordItem(date, temp, hum, pres, co2))

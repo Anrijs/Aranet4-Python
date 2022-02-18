@@ -95,9 +95,8 @@ class DataManipulation(unittest.TestCase):
         self.assertDictEqual(expected, args.__dict__)
 
     def test_calc_log_last_n(self):
-        args = aranetctl.parse_args("11:22:33:44:55:66 -r -l 20".split())
         mock_points = [datetime.datetime.utcnow()] * 200
-        start, end = client.calc_start_end(mock_points, args)
+        start, end = client.calc_start_end(mock_points, {'l': 20})
         # Requested numbers are inclusive so difference is 19 although
         # 20 data points have been requested
         self.assertEqual(181, start)

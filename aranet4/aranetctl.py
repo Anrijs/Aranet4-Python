@@ -154,16 +154,15 @@ def write_csv(filename, log_data):
 
 def main(argv):
     args = parse_args(argv)
-    if not args.records:
-        current = client.get_current_readings(args.device_mac, args)
-        s = format_str.format(current=current)
-        print(s)
-    else:
-        records = client.get_all_records(args.device_mac, args)
+    if args.records:
+        records = client.get_all_records(args.device_mac, vars(args))
         print_records(records)
         if args.output:
             write_csv(args.output, records)
-
+    else:
+        current = client.get_current_readings(args.device_mac)
+        s = format_str.format(current=current)
+        print(s)
 
 def entry_point():
     main(argv=sys.argv[1:])
