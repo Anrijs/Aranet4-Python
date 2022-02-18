@@ -126,6 +126,8 @@ class CurrentReading:
 
         if invalid_reading_flag:
             return -1
+        if isinstance(multiplier, float):
+            return round(value * multiplier, 1)
         return value * multiplier
 
 
