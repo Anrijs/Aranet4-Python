@@ -343,7 +343,7 @@ def calc_start_end(datapoint_times: int, entry_filter):
     end = len(datapoint_times)
     if last_n_entries:
         # Result is inclusive so reduce count back by 1
-        start = end - last_n_entries + 1
+        start = max(end - last_n_entries + 1, start)
     if filter_start:
         time_start = -1
         for idx, timestamp in enumerate(datapoint_times, start=1):

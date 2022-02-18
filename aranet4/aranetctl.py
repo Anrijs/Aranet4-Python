@@ -1,10 +1,13 @@
 import argparse
 import csv
+import json
 from dataclasses import asdict
 import datetime
 from pathlib import Path
 import sys
 from time import sleep
+
+import requests
 
 from aranet4 import client
 
@@ -27,6 +30,10 @@ format_str = """
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
     parser.add_argument("device_mac", help="Aranet4 Bluetooth Address")
+    current = parser.add_argument_group("Options for current reading")
+    current.add_argument(
+        "-u", "--url", metavar="URL", help="Remote url for current value push"
+    )
     parser.add_argument(
         "-r", "--records", action="store_true", help="Fetch historical log records"
     )
@@ -57,9 +64,6 @@ def parse_args(ctl_args):
     )
     history.add_argument(
         "-l", "--last", metavar="COUNT", type=int, help="Get <COUNT> last records"
-    )
-    history.add_argument(
-        "-u", "--url", metavar="URL", help="Remote url for current value push"
     )
     history.add_argument(
         "--xt",
@@ -161,6 +165,27 @@ def write_csv(filename, log_data):
             writer.writerow(asdict(line))
 
 
+def post_data(url, current):
+    # get current measurement minute
+    now = datetime.datetime.utcnow().replace(microsecond=0)
+    delta_ago = datetime.timedelta(seconds=current.ago)
+    t = now - delta_ago
+    t = t.replace(second=0)  # epoch, floored to minutes
+    data = {
+        "time": t.timestamp(),
+        "co2": current.co2,
+        "temperature": current.temperature,
+        "pressure": current.pressure,
+        "humidity": current.humidity,
+        "battery": current.battery,
+    }
+    r = requests.post(
+        url,
+        data=data,
+    )
+    print("Pushing data: {:s}".format(r.text))
+
+
 def wait_for_new_record(address):
     current_vals = client.get_current_readings(address)
     wait_time = current_vals.interval - current_vals.ago
@@ -178,12 +203,12 @@ def main(argv):
         print_records(records)
         if args.output:
             write_csv(args.output, records)
-        if args.url:
-            pass
     else:
         current = client.get_current_readings(args.device_mac)
         s = format_str.format(current=current)
         print(s)
+        if args.url:
+            post_data(args.url, current)
 
 
 def entry_point():

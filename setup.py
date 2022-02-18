@@ -20,6 +20,7 @@ setuptools.setup(
     ],
     install_requires=[
         'bleak',
+        'requests',
     ],
     entry_points={
         'console_scripts': ['aranetctl=aranet4.aranetctl:entry_point'],
