@@ -1,3 +1,4 @@
+from dataclasses import asdict
 import paho.mqtt.publish as publish
 import aranet4
 import sys
@@ -50,11 +51,10 @@ def main(argv):
 
     if (topic[-1] != "/"): topic += "/"
 
-    ar4 = aranet4.Aranet4(device_mac)
-    current = ar4.currentReadings()
+    current = aranet4.client.get_current_readings(device_mac)
 
-    print "Publishing results..."
-    publish.multiple(buildMsgs(current, topic), hostname=host, port=int(port), auth=auth)
+    print("Publishing results...")
+    publish.multiple(buildMsgs(asdict(current), topic), hostname=host, port=int(port), auth=auth)
 
 
 if __name__== "__main__":
