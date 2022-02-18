@@ -15,7 +15,7 @@ pip3 install aranet4
    1. Exit from bluetooth ctl: `exit`
 
 ## aranetctl usage
-```shell
+```text
 $ aranetctl -h
 usage: aranetctl [-h] [-u URL] [-r] [-s DATE] [-e DATE] [-o FILE] [-w] [-l COUNT]
                  [--xt] [--xh] [--xp] [--xc]
