@@ -62,7 +62,7 @@ def main(argv):
     client = InfluxDBClient("127.0.0.1", "8086", "root", "root", "aranet4")
     client.create_database('aranet4')
 
-    print "Sending history to InfluxDB..."
+    print("Sending history to InfluxDB...")
     pts = []
 
     for r in results:

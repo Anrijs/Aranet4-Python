@@ -46,41 +46,34 @@ def main(argv):
     device_mac = argv[0]
     device_name = argv[1]
 
-    ar4 = aranet4.Aranet4(device_mac)
-
-    readings = ar4.getTotalReadings()
-
-    start = 0
-    end = readings
-
-    if limit != 0:
-        start = end - limit
-
     client = InfluxDBClient("127.0.0.1", "8086", "root", "root", "aranet4")
     client.create_database('aranet4')
 
     if hist:
-        print "Fetching sensor history..."
-        results = ar4.pullTimedHistory(start, end)
+        print("Fetching sensor history...")
+        results = aranet4.client.get_all_records(mac_address=device_mac,
+                                                 entry_filter={"last": limit})
     else:
-        print "Fetching current readings..."
-        current = ar4.currentReadings()
-        ago = ar4.getSecondsSinceUpdate()
+        print("Fetching current readings...")
+        current = aranet4.client.get_current_readings()
 
-        last = ((datetime.datetime.utcnow().replace(microsecond=0) - datetime.timedelta(seconds=ago)) - datetime.datetime(1970,1,1)).total_seconds()
+        now = datetime.datetime.utcnow().replace(microsecond=0)
+        delta_ago = datetime.timedelta(seconds=current.ago)
+        t = now - delta_ago
+        t = t.replace(second=0)  # epoch, floored to minutes
 
         results = [{
-            "time": last,
+            "time": t.timestamp(),
             "id": 0,
-            "temperature": current["temperature"],
-            "pressure": current["pressure"],
-            "humidity": current["humidity"],
-            "co2": current["co2"]
+            "temperature": current.temperature,
+            "pressure": current.pressure,
+            "humidity": current.humidity,
+            "co2": current.co2
         }]
 
     pts = []
 
-    print "Sending history to InfluxDB..."
+    print("Sending history to InfluxDB...")
     for r in results:
         strtim = datetime.datetime.utcfromtimestamp(r["time"]).strftime('%Y-%m-%dT%H:%M:%SZ') # ISO 8601 UTC
         t = r["temperature"]
@@ -99,6 +92,7 @@ def main(argv):
         pts.append(mkpt(device_name, "co2",         c, strtim))
 
     client.write_points(pts)
+
 
 if __name__== "__main__":
   main(sys.argv[1:])
