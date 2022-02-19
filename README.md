@@ -63,6 +63,7 @@ Temperature:  19.9 C
 Humidity:     51 %
 Pressure:     997.0 hPa
 Battery:      96 %
+Status Display: GREEN
 --------------------------------------
 ```
 
