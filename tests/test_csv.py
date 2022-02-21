@@ -1,5 +1,5 @@
 import csv
-import filecmp
+import difflib
 from pathlib import Path
 import tempfile
 import unittest
@@ -8,13 +8,13 @@ from aranet4 import client
 from aranet4 import aranetctl
 
 here = Path(__file__).parent
-data_file = here.joinpath('data', 'aranet4_readings.csv')
+data_file = here.joinpath("data", "aranet4_readings.csv")
 
 
 def build_data():
     log_filter = client.Filter(1, 14, True, True, True, True)
-    records = client.Record('mock_device', 'v1234', 14, log_filter)
-    with open(data_file, mode='r') as csvfile:
+    records = client.Record("mock_device", "v1234", 14, log_filter)
+    with open(data_file, mode="r") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
             records.value.append(client.RecordItem(**row))
@@ -22,7 +22,6 @@ def build_data():
 
 
 class CSVCreation(unittest.TestCase):
-
     def setUp(self):
         # Create data object
         self.records = build_data()
@@ -34,9 +33,13 @@ class CSVCreation(unittest.TestCase):
 
     def test_simple_write(self):
         aranetctl.write_csv(self.test_file.name, self.records)
-        cmp_result = filecmp.cmp(self.test_file.name, data_file)
-        self.assertTrue(cmp_result)
+        ref = data_file.read_text().splitlines(keepends=False)
+        new = Path(self.test_file.name).read_text().splitlines(keepends=False)
+        cmp_result = list(
+            difflib.context_diff(ref, new, fromfile="reference", tofile="test output")
+        )
+        self.assertListEqual([], cmp_result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
