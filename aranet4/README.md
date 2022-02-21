@@ -27,7 +27,7 @@ class CurrentReading:
 Get stored datapoints from device. Apply any filters requested
 
 `entry_filter` is a dictionary that can have the following values:
- - `l`: int : Get last n entries
+ - `last`: int : Get last n entries
  - `start`: datetime : Get entries after specified time
  - `end`: datetime : Get entries before specified time
  - `temp`: bool : Get temperature data points (default = True)

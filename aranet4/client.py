@@ -318,7 +318,7 @@ def _calc_start_end(datapoint_times: int, entry_filter):
     """
     Apply filters to get required start and end datapoint.
     `entry_filter` is a dictionary that can have the following values:
-        `l`: int : Get last n entries
+        `last`: int : Get last n entries
         `start`: datetime : Get entries after specified time
         `end`: datetime : Get entries before specified time
     """
@@ -370,7 +370,7 @@ async def _all_records(address, entry_filter):
     """
     Get stored data points from device. Apply any filters requested
     `entry_filter` is a dictionary that can have the following values:
-        `l`: int : Get last n entries
+        `last`: int : Get last n entries
         `start`: datetime : Get entries after specified time
         `end`: datetime : Get entries before specified time
         `temp`: bool : Get temperature data points (default = True)
@@ -446,7 +446,7 @@ def get_all_records(mac_address: str, entry_filter: dict) -> Record:
     """
     Get stored datapoints from device. Apply any filters requested
     `entry_filter` is a dictionary that can have the following values:
-        `l`: int : Get last n entries
+        `last`: int : Get last n entries
         `start`: datetime : Get entries after specified time
         `end`: datetime : Get entries before specified time
         `temp`: bool : Get temperature data points (default = True)
