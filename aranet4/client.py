@@ -242,8 +242,13 @@ class Aranet4:
 
     async def get_name(self):
         """Get name of remote device"""
-        raw_bytes = await self.device.read_gatt_char(self.GENERIC_READ_DEVICE_NAME)
-        return raw_bytes.decode("utf-8")
+        try:
+            raw_bytes = await self.device.read_gatt_char(self.GENERIC_READ_DEVICE_NAME)
+            return raw_bytes.decode("utf-8")
+        except:
+            # fallback to serial number
+            raw_bytes = await self.device.read_gatt_char(self.COMMON_READ_SERIAL_NO)
+            return "Aranet4 {}".format(raw_bytes.decode("utf-8"))
 
     async def get_version(self):
         """Get firmware version of remote device"""
