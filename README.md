@@ -27,6 +27,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   -r, --records         Fetch historical log records
+  --scan                Scan Aranet4 devices
 
 Options for current reading:
   -u URL, --url URL     Remote url for current value push
