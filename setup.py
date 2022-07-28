@@ -5,7 +5,7 @@ with open("aranet4/README.md", "r") as fh:
 
 setuptools.setup(
     name="aranet4",
-    version="2.0.1",
+    version="2.0.2",
     description="Aranet4 Python client",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -25,4 +25,7 @@ setuptools.setup(
     entry_points={
         'console_scripts': ['aranetctl=aranet4.aranetctl:entry_point'],
     },
+    package_data = {
+        'aranet4': ['README.md'],
+    }
 )
