@@ -11,8 +11,7 @@ from bleak import BleakScanner
 
 import requests
 
-#from aranet4 import client
-import client
+from aranet4 import client
 
 format_str = """
 --------------------------------------
