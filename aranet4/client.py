@@ -200,10 +200,13 @@ class Aranet4:
     # Write / Aranet service
     AR4_WRITE_CMD = "f0cd1402-95da-4f4b-9ac8-aa55d312af0c"
 
+    # Regexp
+    REGEX_MAC  = "([0-9a-f]{2}[:-]){5}([0-9a-f]{2})"
+    REGEX_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+    REGEX_ADDR = "({})|({})".format(REGEX_MAC, REGEX_UUID)
+
     def __init__(self, address: str):
-        if not re.match(
-            "[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$", address.lower()
-        ):
+        if not re.match(self.REGEX_ADDR, address.lower()):
             raise Aranet4Error("Invalid device address")
 
         self.address = address
