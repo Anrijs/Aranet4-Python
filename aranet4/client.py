@@ -292,9 +292,9 @@ class Aranet4:
         header = 0x82
         unknown = 0x00
         val = struct.pack("<BBHHH", header, param.value, unknown, start, end)
-        # Request command: b'\x82\x01\x00\x00\xde\x01\x3d\x05'
+        # Request command: b'\x82\x01\x00\x00\x01\x00\xe0\x07'
         # for temperature from start at 1 and ending 2016
-        # Request command: b'\x82\x04\x00\x00\x01\x00\xe0\x07'
+        # Request command: b'\x82\x04\x00\x00\xde\x01\x3d\x05'
         # for co2 from start at 478 and end 1341
 
         # register delegate
