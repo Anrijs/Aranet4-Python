@@ -302,7 +302,7 @@ class Aranet4:
             self.AR4_READ_HISTORY_READINGS, param, log_size, self
         )
 
-        value = await self.device.write_gatt_char(self.AR4_WRITE_CMD, val)
+        value = await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
         self.reading = True
         await self.device.start_notify(
             self.AR4_READ_HISTORY_READINGS, delegate.handle_notification
