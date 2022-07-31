@@ -31,16 +31,16 @@ format_str = """
 
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
-    parser.add_argument("device_mac", help="Aranet4 Bluetooth Address")
+    parser.add_argument("device_mac", nargs='?', help="Aranet4 Bluetooth Address")
+    parser.add_argument(
+        "--scan", action="store_true", help="Scan Aranet4 devices"
+    )
     current = parser.add_argument_group("Options for current reading")
     current.add_argument(
         "-u", "--url", metavar="URL", help="Remote url for current value push"
     )
     parser.add_argument(
         "-r", "--records", action="store_true", help="Fetch historical log records"
-    )
-    parser.add_argument(
-        "--scan", action="store_true", help="Scan Aranet4 devices"
     )
     history = parser.add_argument_group("Filter History Log Records")
     history.add_argument(
@@ -223,7 +223,7 @@ def main(argv):
 
     if args.scan:
         devices = client.find_nearby(print_scan_result)
-        print("Scan result:", devices)
+        print(f"Scan finished. Found {len(devices)}")
         return
 
     if args.records:
