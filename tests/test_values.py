@@ -42,6 +42,7 @@ base_args = dict(
     last=None,
     output=None,
     records=False,
+    scan=False,
     start=None,
     url=None,
     wait=False,
