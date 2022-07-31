@@ -377,7 +377,7 @@ def get_current_readings(mac_address: str) -> CurrentReading:
 
 
 async def _find_nearby(detection_callback: callable,
-                       duration: int = 20) -> List[BLEDevice]:
+                       duration: int = 5) -> List[BLEDevice]:
     scanner = BleakScanner()
     scanner.register_detection_callback(detection_callback)
     print("Looking for Aranet4 devices...")
