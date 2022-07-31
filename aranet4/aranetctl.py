@@ -208,16 +208,6 @@ def wait_for_new_record(address):
         print(f"Next data point in {secs}...", end="\r")
 
 
-async def scan_devices():
-    devices = []
-    discovered = await BleakScanner.discover()
-    for d in discovered:
-        if ("Aranet4" in d.name):
-            devices.append(d)
-            print(type(d))
-    return devices
-
-
 def main(argv):
     args = parse_args(argv)
 
