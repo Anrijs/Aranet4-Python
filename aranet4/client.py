@@ -7,6 +7,8 @@ import struct
 from typing import List
 
 from bleak import BleakClient
+from bleak import BleakScanner
+from bleak.backends.device import BLEDevice
 
 
 class Aranet4Error(Exception):
@@ -372,6 +374,23 @@ async def _current_reading(address):
 def get_current_readings(mac_address: str) -> CurrentReading:
     """Get from the device the current measurements"""
     return asyncio.run(_current_reading(mac_address))
+
+
+async def _find_nearby(detection_callback: callable,
+                       duration: int = 20) -> List[BLEDevice]:
+    scanner = BleakScanner()
+    scanner.register_detection_callback(detection_callback)
+    print("Looking for Aranet4 devices...")
+    await scanner.start()
+    await asyncio.sleep(duration)
+    await scanner.stop()
+    return [device
+            for device in scanner.discovered_devices
+            if "Aranet4" in device.name]
+
+
+def find_nearby(detect_callback: callable) -> List[BLEDevice]:
+    return asyncio.run(_find_nearby(detect_callback))
 
 
 async def _all_records(address, entry_filter):

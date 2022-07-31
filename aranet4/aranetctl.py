@@ -143,6 +143,15 @@ def print_records(records):
     print("-" * char_repeat)
 
 
+def print_scan_result(device, ad_data):
+    if "Aranet4" in device.name:
+        print("Aranet4 device found")
+        print("----------------------------")
+        print(f"  Name:    {device.name}")
+        print(f"  Address: {device.address}")
+        print()
+
+
 def write_csv(filename, log_data):
     """
     Output `client.Record` dataclass to csv file
@@ -198,28 +207,25 @@ def wait_for_new_record(address):
         sleep(1)
         print(f"Next data point in {secs}...", end="\r")
 
+
 async def scan_devices():
     devices = []
     discovered = await BleakScanner.discover()
     for d in discovered:
         if ("Aranet4" in d.name):
             devices.append(d)
+            print(type(d))
     return devices
 
+
 def main(argv):
-    # Workaround for required device address
-    if ("--scan" in argv):
-        print("Looking for Aranet4 devices...")
-        devices = asyncio.run(scan_devices())
-        print("{} Aranet4 device(s) found".format(len(devices)))
-        for d in devices:
-            print("----------------------------")
-            print("  Name:    {}".format(d.name))
-            print("  Address: {}".format(d.address))
-        print()
+    args = parse_args(argv)
+
+    if args.scan:
+        devices = client.find_nearby(print_scan_result)
+        print("Scan result:", devices)
         return
 
-    args = parse_args(argv)
     if args.records:
         if args.wait:
             wait_for_new_record(args.device_mac)
