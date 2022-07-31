@@ -1,13 +1,10 @@
 import argparse
 import csv
-import json
 from dataclasses import asdict
 import datetime
 from pathlib import Path
 import sys
 from time import sleep
-import asyncio
-from bleak import BleakScanner
 
 import requests
 
