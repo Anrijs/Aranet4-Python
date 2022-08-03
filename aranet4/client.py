@@ -234,11 +234,11 @@ class Aranet4:
         if details:
             uuid = self.AR4_READ_CURRENT_READINGS_DET
             # co2, temp, pressure, humidity, battery, status
-            value_fmt = "<hhhbbbhh"
+            value_fmt = "<HHHBBBHH"
         else:
             uuid = self.AR4_READ_CURRENT_READINGS
             # co2, temp, pressure, humidity, battery, status, interval, ago
-            value_fmt = "<hhhbbb"
+            value_fmt = "<HHHBBB"
 
         raw_bytes = await self.device.read_gatt_char(uuid)
         value = struct.unpack(value_fmt, raw_bytes)
