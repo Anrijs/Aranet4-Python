@@ -141,7 +141,7 @@ def print_records(records):
 
 
 def print_scan_result(device, ad_data):
-    if "Aranet4" in device.name:
+    if device.name and "Aranet4" in device.name:
         print("Aranet4 device found")
         print("----------------------------")
         print(f"  Name:    {device.name}")
