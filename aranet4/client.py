@@ -4,7 +4,7 @@ import datetime
 from enum import IntEnum
 import re
 import struct
-from typing import List
+from typing import List, NamedTuple
 
 from bleak import BleakClient
 from bleak import BleakScanner
@@ -165,6 +165,15 @@ class Record:
     value: List[RecordItem] = field(default_factory=list)
 
 
+class HistoryHeader(NamedTuple):
+    param: int
+    interval: int
+    total_readings: int
+    ago: int
+    start: int
+    count: int
+
+
 def _empty_reading(size):
     return [-1] * size
 
@@ -186,7 +195,8 @@ class Aranet4:
     AR4_READ_INTERVAL = "f0cd2002-95da-4f4b-9ac8-aa55d312af0c"
     AR4_READ_SECONDS_SINCE_UPDATE = "f0cd2004-95da-4f4b-9ac8-aa55d312af0c"
     AR4_READ_TOTAL_READINGS = "f0cd2001-95da-4f4b-9ac8-aa55d312af0c"
-    AR4_READ_HISTORY_READINGS = "f0cd2003-95da-4f4b-9ac8-aa55d312af0c"
+    AR4_READ_HISTORY_READINGS_V1 = "f0cd2003-95da-4f4b-9ac8-aa55d312af0c"
+    AR4_READ_HISTORY_READINGS_V2 = "f0cd2005-95da-4f4b-9ac8-aa55d312af0c"
 
     # Read / Generic servce
     GENERIC_READ_DEVICE_NAME = "00002a00-0000-1000-8000-00805f9b34fb"
@@ -226,11 +236,11 @@ class Aranet4:
         if details:
             uuid = self.AR4_READ_CURRENT_READINGS_DET
             # co2, temp, pressure, humidity, battery, status
-            value_fmt = "<hhhbbbhh"
+            value_fmt = "<HHHBBBHH"
         else:
             uuid = self.AR4_READ_CURRENT_READINGS
             # co2, temp, pressure, humidity, battery, status, interval, ago
-            value_fmt = "<hhhbbb"
+            value_fmt = "<HHHBBB"
 
         raw_bytes = await self.device.read_gatt_char(uuid)
         value = struct.unpack(value_fmt, raw_bytes)
@@ -288,30 +298,95 @@ class Aranet4:
         List will be length of "total datapoints". If index is outside `start`
         and `end` request then default of `-1` is returned for those datapoints.
         """
+
+        history_v2 = self.device.services.get_characteristic(
+            self.AR4_READ_HISTORY_READINGS_V2
+        )
+
+        if history_v2 is not None:
+            return await self._get_records_v2(param, log_size, start, end)
+
+        return await self._get_records_v1(param, log_size, start, end)
+
+    async def _get_records_v2(
+        self, param: Param, log_size: int, start: int = 0x0001, end: int = 0xFFFF
+    ):
+        """
+        Return ordered list of datapoints for requested parameter.
+        List will be length of "total datapoints". If index is outside `start`
+        and `end` request then default of `-1` is returned for those datapoints.
+        """
+        if start < 1:
+            start = 0x0001
+
+        header = 0x61
+        val = struct.pack("<BBH", header, param.value, start)
+        # Request command: b'\x61\x01\x01\x00'
+        # for temperature from start at 1
+        # Request command: b'\x61\x04\xde\x01'
+        # for co2 from start at 478
+
+        result = _empty_reading(log_size)
+
+        await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
+
+        reading = True
+        while reading:
+            packet = await self.device.read_gatt_char(
+                self.AR4_READ_HISTORY_READINGS_V2
+            )
+
+            header = HistoryHeader(*struct.unpack("<BHHHHB", packet[:10]))
+
+            if header.param != param.value or header.count == 0:
+                await asyncio.sleep(0.1)
+                continue
+
+            pattern = "<B" if param.value == Param.HUMIDITY else "<H"
+
+            data_values = struct.iter_unpack(pattern, packet[10:])
+            for idx, value in enumerate(data_values, header.start - 1):
+                if idx > end or idx == header.start - 1 + header.count:
+                    break
+                result[idx] = CurrentReading._set(param, value[0])
+
+            if idx >= end or (header.start - 1 + header.count) == log_size:
+                reading = False
+
+        return result
+
+    async def _get_records_v1(
+        self, param: Param, log_size: int, start: int = 0x0001, end: int = 0xFFFF
+    ):
+        """
+        Return ordered list of datapoints for requested parameter.
+        List will be length of "total datapoints". If index is outside `start`
+        and `end` request then default of `-1` is returned for those datapoints.
+        """
         if start < 1:
             start = 0x0001
 
         header = 0x82
         unknown = 0x00
         val = struct.pack("<BBHHH", header, param.value, unknown, start, end)
-        # Request command: b'\x82\x01\x00\x00\xde\x01\x3d\x05'
+        # Request command: b'\x82\x01\x00\x00\x01\x00\xe0\x07'
         # for temperature from start at 1 and ending 2016
-        # Request command: b'\x82\x04\x00\x00\x01\x00\xe0\x07'
+        # Request command: b'\x82\x04\x00\x00\xde\x01\x3d\x05'
         # for co2 from start at 478 and end 1341
 
         # register delegate
         delegate = Aranet4HistoryDelegate(
-            self.AR4_READ_HISTORY_READINGS, param, log_size, self
+            self.AR4_READ_HISTORY_READINGS_V1, param, log_size, self
         )
 
-        value = await self.device.write_gatt_char(self.AR4_WRITE_CMD, val)
+        value = await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
         self.reading = True
         await self.device.start_notify(
-            self.AR4_READ_HISTORY_READINGS, delegate.handle_notification
+            self.AR4_READ_HISTORY_READINGS_V1, delegate.handle_notification
         )
         while self.reading:
             await asyncio.sleep(0.1)
-        await self.device.stop_notify(self.AR4_READ_HISTORY_READINGS)
+        await self.device.stop_notify(self.AR4_READ_HISTORY_READINGS_V1)
         return delegate.result
 
 
