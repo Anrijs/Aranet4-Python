@@ -213,6 +213,10 @@ def main(argv):
         print(f"Scan finished. Found {len(devices)}")
         return
 
+    if not args.device_mac:
+        print("Device address not specified")
+        return
+
     if args.records:
         if args.wait:
             wait_for_new_record(args.device_mac)
