@@ -1,13 +1,10 @@
 import argparse
 import csv
-import json
 from dataclasses import asdict
 import datetime
 from pathlib import Path
 import sys
 from time import sleep
-import asyncio
-from bleak import BleakScanner
 
 import requests
 
@@ -31,16 +28,16 @@ format_str = """
 
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
-    parser.add_argument("device_mac", help="Aranet4 Bluetooth Address")
+    parser.add_argument("device_mac", nargs='?', help="Aranet4 Bluetooth Address")
+    parser.add_argument(
+        "--scan", action="store_true", help="Scan Aranet4 devices"
+    )
     current = parser.add_argument_group("Options for current reading")
     current.add_argument(
         "-u", "--url", metavar="URL", help="Remote url for current value push"
     )
     parser.add_argument(
         "-r", "--records", action="store_true", help="Fetch historical log records"
-    )
-    parser.add_argument(
-        "--scan", action="store_true", help="Scan Aranet4 devices"
     )
     history = parser.add_argument_group("Filter History Log Records")
     history.add_argument(
@@ -143,6 +140,15 @@ def print_records(records):
     print("-" * char_repeat)
 
 
+def print_scan_result(device, ad_data):
+    if "Aranet4" in device.name:
+        print("Aranet4 device found")
+        print("----------------------------")
+        print(f"  Name:    {device.name}")
+        print(f"  Address: {device.address}")
+        print()
+
+
 def write_csv(filename, log_data):
     """
     Output `client.Record` dataclass to csv file
@@ -198,28 +204,15 @@ def wait_for_new_record(address):
         sleep(1)
         print(f"Next data point in {secs}...", end="\r")
 
-async def scan_devices():
-    devices = []
-    discovered = await BleakScanner.discover()
-    for d in discovered:
-        if ("Aranet4" in d.name):
-            devices.append(d)
-    return devices
 
 def main(argv):
-    # Workaround for required device address
-    if ("--scan" in argv):
-        print("Looking for Aranet4 devices...")
-        devices = asyncio.run(scan_devices())
-        print("{} Aranet4 device(s) found".format(len(devices)))
-        for d in devices:
-            print("----------------------------")
-            print("  Name:    {}".format(d.name))
-            print("  Address: {}".format(d.address))
-        print()
+    args = parse_args(argv)
+
+    if args.scan:
+        devices = client.find_nearby(print_scan_result)
+        print(f"Scan finished. Found {len(devices)}")
         return
 
-    args = parse_args(argv)
     if args.records:
         if args.wait:
             wait_for_new_record(args.device_mac)
