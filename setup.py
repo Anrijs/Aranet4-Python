@@ -1,11 +1,11 @@
 import setuptools
 
-with open("aranet4/README.md", "r") as fh:
+with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="aranet4",
-    version="2.0.3",
+    version="2.0.4",
     description="Aranet4 Python client",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -13,7 +13,6 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
@@ -24,8 +23,5 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': ['aranetctl=aranet4.aranetctl:entry_point'],
-    },
-    package_data = {
-        'aranet4': ['README.md'],
     }
 )
