@@ -419,19 +419,19 @@ def _calc_start_end(datapoint_times: int, entry_filter):
     if filter_start:
         time_start = -1
         for idx, timestamp in enumerate(datapoint_times, start=1):
-            if filter_start < timestamp:
+            if filter_start <= timestamp:
                 time_start = idx
                 break
-        if 0 < time_start < end:
+        if 0 < time_start <= end:
             start = time_start
     if filter_end:
         time_end = -1
         for idx, timestamp in enumerate(datapoint_times, start=1):
-            if timestamp < filter_end:
+            if timestamp <= filter_end:
                 time_end = idx
             else:
                 break
-        if start < time_end < end:
+        if start <= time_end <= end:
             end = time_end
     return start, end
 
