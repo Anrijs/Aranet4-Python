@@ -178,7 +178,7 @@ def write_csv(filename, log_data):
 
 def post_data(url, current):
     # get current measurement minute
-    now = datetime.datetime.utcnow().replace(microsecond=0)
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
     delta_ago = datetime.timedelta(seconds=current.ago)
     t = now - delta_ago
     t = t.replace(second=0)  # epoch, floored to minutes

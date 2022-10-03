@@ -284,7 +284,7 @@ class Aranet4:
     async def get_last_measurement_date(self, use_epoch: bool = False):
         """Calculate the time the last datapoint was logged"""
         ago = await self.get_seconds_since_update()
-        now = datetime.datetime.utcnow().replace(microsecond=0)
+        now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
         delta_ago = datetime.timedelta(seconds=ago)
         last_reading = now - delta_ago
         if use_epoch:
@@ -488,7 +488,7 @@ async def _all_records(address, entry_filter):
     dev_name = await monitor.get_name()
     dev_version = await monitor.get_version()
     last_log = await monitor.get_seconds_since_update()
-    now = datetime.datetime.utcnow().replace(microsecond=0)
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
     interval = await monitor.get_interval()
     next_log = interval - last_log
     # Decide if there is enough time to read all the data
@@ -499,7 +499,7 @@ async def _all_records(address, entry_filter):
         await asyncio.sleep(next_log)
         # there was another log so update the numbers
         last_log = await monitor.get_seconds_since_update()
-        now = datetime.datetime.utcnow().replace(microsecond=0)
+        now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
 
     log_size = await monitor.get_total_readings()
     log_points = _log_times(now, log_size, interval, last_log)

@@ -96,7 +96,7 @@ class DataManipulation(unittest.TestCase):
         self.assertDictEqual(expected, args.__dict__)
 
     def test_calc_log_last_n(self):
-        mock_points = [datetime.datetime.utcnow()] * 200
+        mock_points = [datetime.datetime.now(datetime.timezone.utc)] * 200
         start, end = client._calc_start_end(mock_points, {'last': 20})
         # Requested numbers are inclusive so difference is 19 although
         # 20 data points have been requested
