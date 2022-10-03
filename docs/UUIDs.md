@@ -1,6 +1,7 @@
 # Read values
 ## Aranet4 info
-Service UUID: `f0cd1400-95da-4f4b-9ac8-aa55d312af0c`
+Service UUID: `0000fce0-0000-1000-8000-00805f9b34fb`
+Service UUID before v1.2.0: `f0cd1400-95da-4f4b-9ac8-aa55d312af0c`
 
 | Characteristic UUID                  | Handle | Name                              | Type       | Return bytes                           | Values                           |
 |--------------------------------------|--------|-----------------------------------|------------|----------------------------------------|----------------------------------|

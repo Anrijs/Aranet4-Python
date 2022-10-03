@@ -185,7 +185,8 @@ class Aranet4:
 
     # Aranet UUIDs and handles
     # Services
-    AR4_SERVICE = "f0cd1400-95da-4f4b-9ac8-aa55d312af0c"
+    AR4_OLD_SERVICE = "f0cd1400-95da-4f4b-9ac8-aa55d312af0c" # until v1.2.0
+    AR4_SERVICE = "0000fce0-0000-1000-8000-00805f9b34fb" # v1.2.0 and later
     GENERIC_SERVICE = "00001800-0000-1000-8000-00805f9b34fb"
     COMMON_SERVICE = "0000180a-0000-1000-8000-00805f9b34fb"
 
