@@ -57,7 +57,7 @@ def main(argv):
         print("Fetching current readings...")
         current = aranet4.client.get_current_readings()
 
-        now = datetime.datetime.utcnow().replace(microsecond=0)
+        now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
         delta_ago = datetime.timedelta(seconds=current.ago)
         t = now - delta_ago
         t = t.replace(second=0)  # epoch, floored to minutes
