@@ -132,6 +132,18 @@ class CurrentReading:
             return round(value * multiplier, 1)
         return value * multiplier
 
+@dataclass
+class Aranet4Advertisement:
+    """dataclass to store the information aboud scanned aranet4 device"""
+
+    device: BLEDevice = None
+    readings: CurrentReading = None
+
+    def _set(device: BLEDevice, data: tuple = None):
+        self.device = device
+        if (data):
+            self.readings.decode(data)
+
 
 @dataclass
 class RecordItem:
@@ -453,22 +465,60 @@ def get_current_readings(mac_address: str) -> CurrentReading:
     return asyncio.run(_current_reading(mac_address))
 
 
-async def _find_nearby(detection_callback: callable,
-                       duration: int = 5) -> List[BLEDevice]:
-    scanner = BleakScanner()
-    scanner.register_detection_callback(detection_callback)
-    print("Looking for Aranet4 devices...")
+class Aranet4Scanner:
+    """Aranet4 Scanner class - scan advertisements and process data, if available"""
+
+    def _process_advertisement(self, device, ad_data):
+        """Processes Aranet4 advertisement data"""
+
+        adv = Aranet4Advertisement()
+        adv.device = device
+
+        has_service = Aranet4.AR4_SERVICE in ad_data.service_data
+
+        if (has_service):
+            raw_bytes = ad_data.service_data[Aranet4.AR4_SERVICE]
+            value_fmt = "<HHHBBBHH"
+            value = struct.unpack(value_fmt, raw_bytes[7:])
+            adv.readings = CurrentReading()
+            adv.readings.decode(value)
+            adv.readings.name = device.name
+        elif (device.name and "Aranet4" in device.name):
+            pass
+        else:
+            adv.device = None
+
+        if (adv.device):
+            self.on_scan(adv)
+
+    def __init__(self, on_scan):
+        self.on_scan = on_scan
+        self.scanner = BleakScanner()
+        self.scanner.register_detection_callback(self._process_advertisement)
+
+    async def start(self):
+        await self.scanner.start()
+
+    async def stop(self):
+        await self.scanner.stop()
+
+async def _find_nearby(detect_callback: callable, duration: int) -> List[BLEDevice]:
+    scanner = Aranet4Scanner(detect_callback)
     await scanner.start()
     await asyncio.sleep(duration)
     await scanner.stop()
     return [device
-            for device in scanner.discovered_devices
+            for device in scanner.scanner.discovered_devices
             if "Aranet4" in device.name]
 
 
-def find_nearby(detect_callback: callable) -> List[BLEDevice]:
-    return asyncio.run(_find_nearby(detect_callback))
+def find_nearby(detect_callback: callable, duration: int = 5) -> List[BLEDevice]:
+    """
+    Scans for nearby Aranet4 devices.
+    Will call callback on every valid Aranet4 advertisement, including duplcates
+    """
 
+    return asyncio.run(_find_nearby(detect_callback, duration))
 
 async def _all_records(address, entry_filter):
     """

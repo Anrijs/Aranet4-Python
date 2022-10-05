@@ -25,7 +25,6 @@ format_str = """
 --------------------------------------
 """
 
-
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
     parser.add_argument("device_mac", nargs='?', help="Aranet4 Bluetooth Address")
@@ -140,13 +139,24 @@ def print_records(records):
     print("-" * char_repeat)
 
 
-def print_scan_result(device, ad_data):
-    if device.name and "Aranet4" in device.name:
-        print("Aranet4 device found")
-        print("----------------------------")
-        print(f"  Name:    {device.name}")
-        print(f"  Address: {device.address}")
-        print()
+def print_scan_result(advertisement):
+    if not advertisement.device:
+        return
+
+    print("=======================================")
+    print(f"  Name:     {advertisement.device.name}")
+    print(f"  Address:  {advertisement.device.address}")
+    print(f"  RSSI:     {advertisement.device.rssi} dBm")
+
+    if advertisement.readings:
+        print("--------------------------------------")
+        print(f"  CO2:           {advertisement.readings.co2} pm")
+        print(f"  Temperature:   {advertisement.readings.temperature:.01f} \u00b0C")
+        print(f"  Humidity:      {advertisement.readings.humidity} %")
+        print(f"  Pressure:      {advertisement.readings.pressure:.01f} hPa")
+        print(f"  Battery:       {advertisement.readings.battery} %")
+        print(f"  Status disp.:  {advertisement.readings.status.name}")
+    print()
 
 
 def write_csv(filename, log_data):
@@ -209,6 +219,7 @@ def main(argv):
     args = parse_args(argv)
 
     if args.scan:
+        print("Looking for Aranet4 devices...")
         devices = client.find_nearby(print_scan_result)
         print(f"Scan finished. Found {len(devices)}")
         return

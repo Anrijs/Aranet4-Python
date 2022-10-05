@@ -1,0 +1,43 @@
+import sys
+from aranet4 import Aranet4Scanner
+import asyncio
+import time
+
+"""
+    Custom scanner setup example.
+    This will run scanner forever (or until interupted by Ctrl^C)
+"""
+
+def on_scan(advertisement):
+    if not advertisement.readings:
+        return
+
+    print("=======================================")
+    print(f"  Name:     {advertisement.device.name}")
+    print(f"  Address:  {advertisement.device.address}")
+    print(f"  RSSI:     {advertisement.device.rssi} dBm")
+
+    if advertisement.readings:
+        print("--------------------------------------")
+        print(f"  CO2:           {advertisement.readings.co2} pm")
+        print(f"  Temperature:   {advertisement.readings.temperature:.01f} \u00b0C")
+        print(f"  Humidity:      {advertisement.readings.humidity} %")
+        print(f"  Pressure:      {advertisement.readings.pressure:.01f} hPa")
+        print(f"  Battery:       {advertisement.readings.battery} &")
+        print(f"  Status disp.:  {advertisement.readings.status.name}")
+        print(f"  Ago:           {advertisement.readings.ago} s")
+    print()
+
+async def main(argv):
+    scanner = Aranet4Scanner(on_scan)
+    await scanner.start()
+    while (True): # Run forever
+        await asyncio.sleep(1)
+    await scanner.stop()
+
+    
+if __name__== "__main__":
+    try:
+        asyncio.run(main(sys.argv[1:]))
+    except KeyboardInterrupt:
+        print("User interupted.")
