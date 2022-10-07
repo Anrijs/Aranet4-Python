@@ -139,6 +139,11 @@ class Version:
     minor: int = -1
     patch: int = -1
 
+    def __init__(self, major, minor, patch):
+        self.major = major
+        self.minor = minor
+        self.patch = patch
+
     def __str__(self):
         return f"v{self.major}.{self.minor}.{self.patch}"
 
@@ -159,16 +164,14 @@ class ManufacturerData:
     calibration_state: CalibrationState  = -1
     dfu_active: bool = False
     integrations: bool = False
-    version = Version()
+    version: Version = None
 
     def decode(self, value: tuple):
         self.disconnected = self._get_b(value[0], 0)
         self.calibration_state = CalibrationState(self._get_uint2(value[0], 2))
         self.dfu_active = self._get_b(value[0], 4)
         self.integrations = self._get_b(value[0], 5)
-        self.version.patch = value[1]
-        self.version.minor = value[2]
-        self.version.major = value[3]
+        self.version = Version(value[3], value[2], value[1])
 
     def _get_b(self, value, pos):
         return True if value & (1 << pos) else False
@@ -521,21 +524,24 @@ class Aranet4Scanner:
         has_manufacurer_data = Aranet4.MANUFACTURER_ID in ad_data.manufacturer_data
         has_service = Aranet4.AR4_SERVICE in ad_data.service_data
 
-        if has_service:
-            raw_bytes = ad_data.service_data[Aranet4.AR4_SERVICE]
-            value_fmt = "<HHHBBBHH"
-            value = struct.unpack(value_fmt, raw_bytes[7:])
-            adv.readings = CurrentReading()
-            adv.readings.decode(value)
-            adv.readings.name = device.name
-
         if has_manufacurer_data:
             mf_data = ManufacturerData()
             raw_bytes = ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID]
+
+            # Basic info
             value_fmt = "<BBBHBB"
-            value = struct.unpack(value_fmt, raw_bytes)
+            value = struct.unpack(value_fmt, raw_bytes[0:7])
             mf_data.decode(value)
             adv.manufacturer_data = mf_data
+
+            # Extended info / measurements
+            if len(raw_bytes) >= 20:
+                value_fmt = "<HHHBBBHH"
+                value = struct.unpack(value_fmt, raw_bytes[8:21])
+                adv.readings = CurrentReading()
+                adv.readings.decode(value)
+                adv.readings.name = device.name
+
 
         self.on_scan(adv)
 
