@@ -132,17 +132,58 @@ class CurrentReading:
             return round(value * multiplier, 1)
         return value * multiplier
 
+
+@dataclass
+class Version:
+    major: int = -1
+    minor: int = -1
+    patch: int = -1
+
+    def __str__(self):
+        return f"v{self.major}.{self.minor}.{self.patch}"
+
+
+class CalibrationState(IntEnum):
+    """Enum for calibration state"""
+    NOT_ACTIVE = 0
+    END_REQUEST = 1
+    IN_PROGRESS = 2
+    ERROR = 3
+
+
+@dataclass
+class ManufacturerData:
+    """dataclass to store manufacturer data"""
+
+    disconnected: bool = False
+    calibration_state: CalibrationState  = -1
+    dfu_active: bool = False
+    integrations: bool = False
+    version = Version()
+
+    def decode(self, value: tuple):
+        self.disconnected = self._get_b(value[0], 0)
+        self.calibration_state = CalibrationState(self._get_uint2(value[0], 2))
+        self.dfu_active = self._get_b(value[0], 4)
+        self.integrations = self._get_b(value[0], 5)
+        self.version.patch = value[1]
+        self.version.minor = value[2]
+        self.version.major = value[3]
+
+    def _get_b(self, value, pos):
+        return True if value & (1 << pos) else False
+
+    def _get_uint2(self, value, pos):
+        return (value >> pos) & 0x03
+
+
 @dataclass
 class Aranet4Advertisement:
     """dataclass to store the information aboud scanned aranet4 device"""
 
     device: BLEDevice = None
     readings: CurrentReading = None
-
-    def _set(device: BLEDevice, data: tuple = None):
-        self.device = device
-        if (data):
-            self.readings.decode(data)
+    manufacturer_data: ManufacturerData = None
 
 
 @dataclass
@@ -194,6 +235,9 @@ class Aranet4:
 
     # Param return value if no data
     AR4_NO_DATA_FOR_PARAM = -1
+
+    # Manufacurer id
+    MANUFACTURER_ID = 0x0702
 
     # Aranet UUIDs and handles
     # Services
@@ -474,27 +518,34 @@ class Aranet4Scanner:
         adv = Aranet4Advertisement()
         adv.device = device
 
+        has_manufacurer_data = Aranet4.MANUFACTURER_ID in ad_data.manufacturer_data
         has_service = Aranet4.AR4_SERVICE in ad_data.service_data
 
-        if (has_service):
+        if has_service:
             raw_bytes = ad_data.service_data[Aranet4.AR4_SERVICE]
             value_fmt = "<HHHBBBHH"
             value = struct.unpack(value_fmt, raw_bytes[7:])
             adv.readings = CurrentReading()
             adv.readings.decode(value)
             adv.readings.name = device.name
-        elif (device.name and "Aranet4" in device.name):
-            pass
-        else:
-            adv.device = None
 
-        if (adv.device):
-            self.on_scan(adv)
+        if has_manufacurer_data:
+            mf_data = ManufacturerData()
+            raw_bytes = ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID]
+            value_fmt = "<BBBHBB"
+            value = struct.unpack(value_fmt, raw_bytes)
+            mf_data.decode(value)
+            adv.manufacturer_data = mf_data
+
+        self.on_scan(adv)
 
     def __init__(self, on_scan):
+        uuids = [Aranet4.AR4_SERVICE, Aranet4.AR4_OLD_SERVICE]
         self.on_scan = on_scan
-        self.scanner = BleakScanner()
-        self.scanner.register_detection_callback(self._process_advertisement)
+        self.scanner = BleakScanner(
+            detection_callback=self._process_advertisement,
+            service_uuids=uuids
+        )
 
     async def start(self):
         await self.scanner.start()

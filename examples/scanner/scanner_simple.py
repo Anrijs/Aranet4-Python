@@ -11,19 +11,29 @@ def on_scan(advertisement):
 
 def print_advertisement(advertisement):
     print("=======================================")
-    print(f"  Name:     {advertisement.device.name}")
-    print(f"  Address:  {advertisement.device.address}")
-    print(f"  RSSI:     {advertisement.device.rssi} dBm")
+    print(f"  Name:              {advertisement.device.name}")
+    print(f"  Address:           {advertisement.device.address}")
+
+    if advertisement.manufacturer_data:
+        mf_data = advertisement.manufacturer_data
+        print(f"  Version:           {mf_data.version}")
+        print(f"  Integrations:      {mf_data.integrations}")
+        # print(f"  Disconnected:      {mf_data.disconnected}")
+        # print(f"  Calibration state: {mf_data.calibration_state.name}")
+        # print(f"  DFU Active:        {mf_data.dfu_active:}")
+
+    print(f"  RSSI:              {advertisement.device.rssi} dBm")
 
     if advertisement.readings:
-        print("--------------------------------------")
-        print(f"  CO2:           {advertisement.readings.co2} pm")
-        print(f"  Temperature:   {advertisement.readings.temperature:.01f} \u00b0C")
-        print(f"  Humidity:      {advertisement.readings.humidity} %")
-        print(f"  Pressure:      {advertisement.readings.pressure:.01f} hPa")
-        print(f"  Battery:       {advertisement.readings.battery} &")
-        print(f"  Status disp.:  {advertisement.readings.status.name}")
-        print(f"  Ago:           {advertisement.readings.ago} s")
+        readings = advertisement.readings
+        print("-------------------------------------")
+        print(f"  CO2:           {readings.co2} pm")
+        print(f"  Temperature:   {readings.temperature:.01f} \u00b0C")
+        print(f"  Humidity:      {readings.humidity} %")
+        print(f"  Pressure:      {readings.pressure:.01f} hPa")
+        print(f"  Battery:       {readings.battery} &")
+        print(f"  Status disp.:  {readings.status.name}")
+        print(f"  Ago:           {readings.ago} s")
     print()
 
 
@@ -37,6 +47,6 @@ def main(argv):
         advertisement = scanned_devices[addr]
         print_advertisement(advertisement)
 
-    
+
 if __name__== "__main__":
     main(sys.argv[1:])

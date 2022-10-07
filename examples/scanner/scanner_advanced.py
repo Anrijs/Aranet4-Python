@@ -15,7 +15,16 @@ def on_scan(advertisement):
     print("=======================================")
     print(f"  Name:     {advertisement.device.name}")
     print(f"  Address:  {advertisement.device.address}")
-    print(f"  RSSI:     {advertisement.device.rssi} dBm")
+
+    if advertisement.manufacturer_data:
+        mf_data = advertisement.manufacturer_data
+        print(f"  Version:           {mf_data.version}")
+        print(f"  Integrations:      {mf_data.integrations}")
+        # print(f"  Disconnected:      {mf_data.disconnected}")
+        # print(f"  Calibration state: {mf_data.calibration_state.name}")
+        # print(f"  DFU Active:        {mf_data.dfu_active:}")
+
+    print(f"  RSSI:              {advertisement.device.rssi} dBm")
 
     if advertisement.readings:
         print("--------------------------------------")
