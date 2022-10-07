@@ -484,6 +484,8 @@ def _calc_start_end(datapoint_times: int, entry_filter):
                 break
         if 0 < time_start <= end:
             start = time_start
+        else:
+            start = -1 # out of range
     if filter_end:
         time_end = -1
         for idx, timestamp in enumerate(datapoint_times, start=1):
@@ -493,6 +495,8 @@ def _calc_start_end(datapoint_times: int, entry_filter):
                 break
         if start <= time_end <= end:
             end = time_end
+        else:
+            end = -1 # out of range
     return start, end
 
 
@@ -620,6 +624,11 @@ async def _all_records(address, entry_filter):
         entry_filter.get("pres", True),
         entry_filter.get("co2", True),
     )
+
+    if begin < 0 or end < 0:
+        # invalid range. Most likely no points available
+        return  Record(dev_name, dev_version, log_size, rec_filter)
+
     # Read datapoint history from device
     if rec_filter.incl_temperature:
         temperature_val = await monitor.get_records(
