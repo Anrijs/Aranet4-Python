@@ -7,6 +7,8 @@ pip3 install aranet4
 2. Pair Aranet4 device
 3. Run `aranetctl` or use as library
 
+**Note:** Smart Home Integrations must be enabled in Aranet4 mobile app for full support.
+
 ## aranetctl usage
 ```text
 $ aranetctl -h
@@ -113,6 +115,32 @@ print("Temperature:", current.temperature)
 print("Humidity:", current.humidity)
 print("Pressure:", current.pressure)
 ```
+
+### Scanner Example
+Usage: `aranetctl --scan`
+
+Output:
+```
+=======================================
+  Name:     Aranet4 00000
+  Address:  XX:XX:XX:XX:XX:XX
+  RSSI:     -85 dBm
+--------------------------------------
+  CO2:           662 pm
+  Temperature:   21.9 °C
+  Humidity:      48 %
+  Pressure:      1019.2 hPa
+  Battery:       34 %
+  Status disp.:  GREEN
+
+=======================================
+  Name:     Aranet4 00001
+  Address:  XX:XX:XX:XX:XX:XX
+  RSSI:     -91 dBm
+
+```
+
+**Note:** To receive current measurements, Smart Home Integrations must be enabled and firmware version must be v1.2.0 or newer.
 
 ### Logged Readings Example
 
