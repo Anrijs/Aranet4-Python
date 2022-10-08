@@ -32,12 +32,6 @@ def fromisoformat(date_string: str):
         dt = dt.replace(tzinfo=now.tzinfo)
     return dt
 
-import datetime
-
-now = datetime.datetime.now().astimezone()
-then = datetime.datetime.fromisoformat("2022-10-07T22:15:00")
-than = then.replace(tzinfo=now.tzinfo)
-
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
     parser.add_argument("device_mac", nargs='?', help="Aranet4 Bluetooth Address")
