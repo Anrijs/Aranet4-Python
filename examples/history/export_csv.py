@@ -3,7 +3,7 @@ import datetime
 import csv
 
 # aranet4 mac address
-device_mac = "DB:09:1D:2C:EA:7F"
+device_mac = "XX:XX:XX:XX:XX:XX"
 
 # Selection filter. Will export last 25 records
 entry_filter = {
