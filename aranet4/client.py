@@ -588,7 +588,7 @@ def find_nearby(detect_callback: callable, duration: int = 5) -> List[BLEDevice]
 
     return asyncio.run(_find_nearby(detect_callback, duration))
 
-async def _all_records(address, entry_filter):
+async def _all_records(address, entry_filter, remove_empty):
     """
     Get stored data points from device. Apply any filters requested
     `entry_filter` is a dictionary that can have the following values:
@@ -666,10 +666,12 @@ async def _all_records(address, entry_filter):
     record = Record(dev_name, dev_version, log_size, rec_filter)
     for date, co2, temp, pres, hum in data:
         record.value.append(RecordItem(date, temp, hum, pres, co2))
+    if (remove_empty):
+        record.value = record.value[begin-1:end+1]
     return record
 
 
-def get_all_records(mac_address: str, entry_filter: dict) -> Record:
+def get_all_records(mac_address: str, entry_filter: dict, remove_empty: bool = False) -> Record:
     """
     Get stored datapoints from device. Apply any filters requested
     `entry_filter` is a dictionary that can have the following values:
@@ -681,4 +683,4 @@ def get_all_records(mac_address: str, entry_filter: dict) -> Record:
         `pres`: bool : Get pressure data points (default = True)
         `co2`: bool : Get co2 data points (default = True)
     """
-    return asyncio.run(_all_records(mac_address, entry_filter))
+    return asyncio.run(_all_records(mac_address, entry_filter, remove_empty))

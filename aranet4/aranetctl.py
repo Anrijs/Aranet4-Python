@@ -124,7 +124,7 @@ def print_records(records):
         print(" pressure |", end="")
     print("")
     print("-" * char_repeat)
-    filtered_values = records.value[records.filter.begin - 1 : records.filter.end]
+    filtered_values = records.value
     for record_id, line in enumerate(filtered_values, start=records.filter.begin):
         print(f"{record_id:>4d} | {line.date.isoformat()} |", end="")
         if records.filter.incl_co2:
@@ -231,7 +231,7 @@ def main(argv):
     if args.records:
         if args.wait:
             wait_for_new_record(args.device_mac)
-        records = client.get_all_records(args.device_mac, vars(args))
+        records = client.get_all_records(args.device_mac, vars(args), True)
         print_records(records)
         if args.output:
             write_csv(args.output, records)
