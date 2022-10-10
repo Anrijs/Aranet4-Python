@@ -25,13 +25,6 @@ format_str = """
 --------------------------------------
 """
 
-def fromisoformat(date_string: str):
-    dt = datetime.datetime.fromisoformat(date_string).replace(microsecond=0)
-    if not dt.tzinfo:
-        now = datetime.datetime.now().astimezone()
-        dt = dt.replace(tzinfo=now.tzinfo)
-    return dt
-
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
     parser.add_argument("device_mac", nargs='?', help="Aranet4 Bluetooth Address")
@@ -50,14 +43,14 @@ def parse_args(ctl_args):
         "-s",
         "--start",
         metavar="DATE",
-        type=fromisoformat,
+        type=datetime.datetime.fromisoformat,
         help="Records range start (UTC time, example: 2019-09-29T14:00:00",
     )
     history.add_argument(
         "-e",
         "--end",
         metavar="DATE",
-        type=fromisoformat,
+        type=datetime.datetime.fromisoformat,
         help="Records range end (UTC time, example: 2019-09-30T14:00:00",
     )
     history.add_argument(

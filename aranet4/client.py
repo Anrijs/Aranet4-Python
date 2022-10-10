@@ -460,6 +460,13 @@ def _log_times(now, total, interval, ago):
     return times
 
 
+def _attach_tzinfo(dt: datetime) -> datetime:
+    if dt and not dt.tzinfo:
+        now = datetime.datetime.now().astimezone()
+        dt = dt.replace(tzinfo=now.tzinfo)
+    return dt
+
+
 def _calc_start_end(datapoint_times: int, entry_filter):
     """
     Apply filters to get required start and end datapoint.
@@ -469,8 +476,8 @@ def _calc_start_end(datapoint_times: int, entry_filter):
         `end`: datetime : Get entries before specified time
     """
     last_n_entries = entry_filter.get("last")
-    filter_start = entry_filter.get("start")
-    filter_end = entry_filter.get("end")
+    filter_start = _attach_tzinfo(entry_filter.get("start"))
+    filter_end = _attach_tzinfo(entry_filter.get("end"))
     start = 0x0001
     end = len(datapoint_times)
     if last_n_entries:
