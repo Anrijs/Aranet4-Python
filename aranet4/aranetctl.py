@@ -100,7 +100,7 @@ def parse_args(ctl_args):
 
 def print_records(records):
     """Format log records to be printed to screen"""
-    char_repeat = 28
+    char_repeat = 34
     if records.filter.incl_co2:
         char_repeat += 9
     if records.filter.incl_temperature:
@@ -113,7 +113,7 @@ def print_records(records):
     print(f"{'Device Name':<15}: {records.name:>20}")
     print(f"{'Device Version':<15}: {records.version:>20}")
     print("-" * char_repeat)
-    print(f"{'id': ^4} | {'date': ^19} |", end=""),
+    print(f"{'id': ^4} | {'date': ^25} |", end=""),
     if records.filter.incl_co2:
         print(f" {'co2':^6} |", end=""),
     if records.filter.incl_temperature:
