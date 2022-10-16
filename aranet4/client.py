@@ -188,6 +188,30 @@ class Aranet4Advertisement:
     readings: CurrentReading = None
     manufacturer_data: ManufacturerData = None
 
+    def __init__(self, device = None, ad_data = None):
+        self.device = device
+
+        if device and ad_data:
+            has_manufacurer_data = Aranet4.MANUFACTURER_ID in ad_data.manufacturer_data
+
+            if has_manufacurer_data:
+                mf_data = ManufacturerData()
+                raw_bytes = ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID]
+
+                # Basic info
+                value_fmt = "<BBBHBB"
+                value = struct.unpack(value_fmt, raw_bytes[0:7])
+                mf_data.decode(value)
+                self.manufacturer_data = mf_data
+
+                # Extended info / measurements
+                if len(raw_bytes) >= 20:
+                    value_fmt = "<HHHBBBHH"
+                    value = struct.unpack(value_fmt, raw_bytes[8:21])
+                    self.readings = CurrentReading()
+                    self.readings.decode(value)
+                    self.readings.name = device.name
+
 
 @dataclass
 class RecordItem:
@@ -529,30 +553,7 @@ class Aranet4Scanner:
     def _process_advertisement(self, device, ad_data):
         """Processes Aranet4 advertisement data"""
 
-        adv = Aranet4Advertisement()
-        adv.device = device
-
-        has_manufacurer_data = Aranet4.MANUFACTURER_ID in ad_data.manufacturer_data
-        has_service = Aranet4.AR4_SERVICE in ad_data.service_data
-
-        if has_manufacurer_data:
-            mf_data = ManufacturerData()
-            raw_bytes = ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID]
-
-            # Basic info
-            value_fmt = "<BBBHBB"
-            value = struct.unpack(value_fmt, raw_bytes[0:7])
-            mf_data.decode(value)
-            adv.manufacturer_data = mf_data
-
-            # Extended info / measurements
-            if len(raw_bytes) >= 20:
-                value_fmt = "<HHHBBBHH"
-                value = struct.unpack(value_fmt, raw_bytes[8:21])
-                adv.readings = CurrentReading()
-                adv.readings.decode(value)
-                adv.readings.name = device.name
-
+        adv = Aranet4Advertisement(device, ad_data)
 
         self.on_scan(adv)
 
