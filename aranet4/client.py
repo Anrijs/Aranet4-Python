@@ -133,7 +133,7 @@ class CurrentReading:
         return value * multiplier
 
 
-@dataclass
+@dataclass(order=True)
 class Version:
     major: int = -1
     minor: int = -1
