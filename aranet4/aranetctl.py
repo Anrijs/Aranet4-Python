@@ -22,6 +22,7 @@ format_str = """
  Pressure:       {current.pressure:.01f} hPa
  Battery:        {current.battery} %
  Status Display: {current.status.name}
+ Age:            {current.ago}/{current.interval}
 --------------------------------------
 """
 
@@ -156,6 +157,9 @@ def print_scan_result(advertisement):
         print(f"  Pressure:      {advertisement.readings.pressure:.01f} hPa")
         print(f"  Battery:       {advertisement.readings.battery} %")
         print(f"  Status disp.:  {advertisement.readings.status.name}")
+        print(f"  Age:           {advertisement.readings.ago}/{advertisement.readings.interval}")
+        print(f"  Stored:        {advertisement.readings.stored}")
+
     print()
 
 
@@ -219,7 +223,7 @@ def main(argv):
     args = parse_args(argv)
 
     if args.scan:
-        print("Looking for Aranet4 devices...")
+        print("Looking for Aranet devices...")
         devices = client.find_nearby(print_scan_result)
         print(f"Scan finished. Found {len(devices)}")
         return

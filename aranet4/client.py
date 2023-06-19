@@ -27,6 +27,7 @@ class Param(IntEnum):
 class Status(IntEnum):
     """Enum for the different status colors"""
 
+    NONE = 0
     GREEN = 1
     AMBER = 2
     RED = 3
@@ -103,6 +104,26 @@ class CurrentReading:
         if len(value) > 6:
             self.interval = value[6]
             self.ago = value[7]
+
+    def decode2(self, value: tuple, gatt=False):
+        """Process data from current log_size and process before storing"""
+
+        # order from gatt and advertisements are different
+        if gatt:
+            self.temperature = self._set(Param.TEMPERATURE, value[4])
+            self.humidity = value[5] / 10
+            self.battery = value[3]
+            self.status = Status.NONE
+            self.interval = value[1]
+            self.ago = value[2]
+        else:
+            self.temperature = self._set(Param.TEMPERATURE, value[1])
+            self.humidity = value[3] / 10
+            self.battery = value[5]
+            self.status = Status.NONE
+            self.interval = value[7]
+            self.ago = value[8]
+            self.stored = value[9]
 
     @staticmethod
     def _set(param: Param, value: int):
@@ -205,7 +226,13 @@ class Aranet4Advertisement:
                 self.manufacturer_data = mf_data
 
                 # Extended info / measurements
-                if len(raw_bytes) >= 20:
+                if len(raw_bytes) >= 24 and device.name.startswith("Aranet2"):
+                    value_fmt = "<HHHHBBBHHB"
+                    value = struct.unpack(value_fmt, raw_bytes[8:24])
+                    self.readings = CurrentReading()
+                    self.readings.decode2(value)
+                    self.readings.name = device.name
+                elif len(raw_bytes) >= 20:
                     value_fmt = "<HHHBBBHH"
                     value = struct.unpack(value_fmt, raw_bytes[8:21])
                     self.readings = CurrentReading()
@@ -276,6 +303,9 @@ class Aranet4:
     # Read / Aranet service
     AR4_READ_CURRENT_READINGS = "f0cd1503-95da-4f4b-9ac8-aa55d312af0c"
     AR4_READ_CURRENT_READINGS_DET = "f0cd3001-95da-4f4b-9ac8-aa55d312af0c"
+    AR2_READ_CURRENT_READINGS = "f0cd1504-95da-4f4b-9ac8-aa55d312af0c"
+    AR2_READ_CURRENT_READINGS_A = "f0cd3003-95da-4f4b-9ac8-aa55d312af0c" # data is same as other
+    # aranet2 has different service uids. use rhose
     AR4_READ_INTERVAL = "f0cd2002-95da-4f4b-9ac8-aa55d312af0c"
     AR4_READ_SECONDS_SINCE_UPDATE = "f0cd2004-95da-4f4b-9ac8-aa55d312af0c"
     AR4_READ_TOTAL_READINGS = "f0cd2001-95da-4f4b-9ac8-aa55d312af0c"
@@ -318,18 +348,30 @@ class Aranet4:
         """Extract current readings from remote device"""
         readings = CurrentReading()
 
-        if details:
-            uuid = self.AR4_READ_CURRENT_READINGS_DET
-            # co2, temp, pressure, humidity, battery, status
-            value_fmt = "<HHHBBBHH"
-        else:
-            uuid = self.AR4_READ_CURRENT_READINGS
-            # co2, temp, pressure, humidity, battery, status, interval, ago
-            value_fmt = "<HHHBBB"
+        aranet2_char = self.device.services.get_characteristic(
+            self.AR2_READ_CURRENT_READINGS
+        )
 
-        raw_bytes = await self.device.read_gatt_char(uuid)
-        value = struct.unpack(value_fmt, raw_bytes)
-        readings.decode(value)
+        if aranet2_char:
+            uuid = self.AR2_READ_CURRENT_READINGS
+            # co2, temp, pressure, humidity, battery, status
+            value_fmt = "<HHHBHHB"
+            raw_bytes = await self.device.read_gatt_char(uuid)
+            value = struct.unpack(value_fmt, raw_bytes)
+            readings.decode2(value, True)
+        else:
+            if details:
+                uuid = self.AR4_READ_CURRENT_READINGS_DET
+                # co2, temp, pressure, humidity, battery, status
+                value_fmt = "<HHHBBBHH"
+            else:
+                uuid = self.AR4_READ_CURRENT_READINGS
+                # co2, temp, pressure, humidity, battery, status, interval, ^
+                value_fmt = "<HHHBBB"
+
+            raw_bytes = await self.device.read_gatt_char(uuid)
+            value = struct.unpack(value_fmt, raw_bytes)
+            readings.decode(value)
         return readings
 
     async def get_interval(self) -> int:
@@ -578,7 +620,7 @@ async def _find_nearby(detect_callback: callable, duration: int) -> List[BLEDevi
     await scanner.stop()
     return [device
             for device in scanner.scanner.discovered_devices
-            if "Aranet4" in device.name]
+            if "Aranet4" in device.name or "Aranet2" in device.name]
 
 
 def find_nearby(detect_callback: callable, duration: int = 5) -> List[BLEDevice]:
@@ -620,6 +662,10 @@ async def _all_records(address, entry_filter, remove_empty):
         # there was another log so update the numbers
         last_log = await monitor.get_seconds_since_update()
         now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+
+    if dev_name.startswith("Aranet2"):
+        entry_filter["pres"] = False
+        entry_filter["co2"] = False
 
     log_size = await monitor.get_total_readings()
     log_points = _log_times(now, log_size, interval, last_log)
