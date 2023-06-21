@@ -95,6 +95,7 @@ class CurrentReading:
     interval: int = -1
     ago: int = -1
     stored: int = -1
+    counter: int = -1
 
     def decode(self, value: tuple):
         """Process data from current log_size and process before storing"""
@@ -127,7 +128,7 @@ class CurrentReading:
             self.status_h, self.status_t = self._decode_status_flags(value[6])
             self.interval = value[7]
             self.ago = value[8]
-            self.stored = value[9]
+            self.counter = value[9]
 
     @staticmethod
     def _decode_status_flags(status):
