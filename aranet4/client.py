@@ -32,6 +32,7 @@ class Status(IntEnum):
     GREEN = 1
     AMBER = 2
     RED = 3
+    BLUE = 4
 
 
 @dataclass
@@ -89,6 +90,8 @@ class CurrentReading:
     co2: int = -1
     battery: int = -1
     status: int = -1
+    status_t: int = -1
+    status_h: int = -1
     interval: int = -1
     ago: int = -1
     stored: int = -1
@@ -114,17 +117,34 @@ class CurrentReading:
             self.temperature = self._set(Param.TEMPERATURE, value[4])
             self.humidity = self._set(Param.HUMIDITY2, value[5])
             self.battery = value[3]
-            self.status = Status.NONE
+            self.status_h, self.status_t = self._decode_status_flags(value[6])
             self.interval = value[1]
             self.ago = value[2]
         else:
             self.temperature = self._set(Param.TEMPERATURE, value[1])
             self.humidity = self._set(Param.HUMIDITY2, value[3])
             self.battery = value[5]
-            self.status = Status.NONE
+            self.status_h, self.status_t = self._decode_status_flags(value[6])
             self.interval = value[7]
             self.ago = value[8]
             self.stored = value[9]
+
+    @staticmethod
+    def _decode_status_flags(status):
+        status_t = Status.GREEN
+        status_h = Status.GREEN
+
+        if status & 0b0001:
+            status_h = Status.BLUE
+        elif status & 0b0010:
+            status_h = Status.RED
+
+        if status & 0b0100:
+            status_t = Status.BLUE
+        elif status & 0b1000:
+            status_t = Status.RED
+
+        return (status_h, status_t)
 
     @staticmethod
     def _set(param: Param, value: int):
