@@ -22,6 +22,7 @@ class Param(IntEnum):
     HUMIDITY = 2
     PRESSURE = 3
     CO2 = 4
+    HUMIDITY2 = 5
 
 
 class Status(IntEnum):
@@ -83,7 +84,7 @@ class CurrentReading:
     name: str = ""
     version: str = ""
     temperature: float = -1
-    humidity: int = -1
+    humidity: float = -1
     pressure: float = -1
     co2: int = -1
     battery: int = -1
@@ -111,14 +112,14 @@ class CurrentReading:
         # order from gatt and advertisements are different
         if gatt:
             self.temperature = self._set(Param.TEMPERATURE, value[4])
-            self.humidity = value[5] / 10
+            self.humidity = self._set(Param.HUMIDITY2, value[5])
             self.battery = value[3]
             self.status = Status.NONE
             self.interval = value[1]
             self.ago = value[2]
         else:
             self.temperature = self._set(Param.TEMPERATURE, value[1])
-            self.humidity = value[3] / 10
+            self.humidity = self._set(Param.HUMIDITY2, value[3])
             self.battery = value[5]
             self.status = Status.NONE
             self.interval = value[7]
@@ -146,6 +147,9 @@ class CurrentReading:
         elif param == Param.HUMIDITY:
             invalid_reading_flag = value >> 8
             multiplier = 1
+        elif param == Param.HUMIDITY2:
+            invalid_reading_flag = value >> 15 == 1
+            multiplier = 0.1
 
         if invalid_reading_flag:
             return -1
@@ -258,7 +262,7 @@ class Filter:
     begin: int
     end: int
     incl_temperature: bool
-    incl_humidity: bool
+    incl_humidity: int
     incl_pressure: bool
     incl_co2: bool
 
@@ -666,6 +670,8 @@ async def _all_records(address, entry_filter, remove_empty):
     if dev_name.startswith("Aranet2"):
         entry_filter["pres"] = False
         entry_filter["co2"] = False
+        if entry_filter.get("humi", False):
+            entry_filter["humi"] = 2 #v2 humidity
 
     log_size = await monitor.get_total_readings()
     log_points = _log_times(now, log_size, interval, last_log)
@@ -690,7 +696,11 @@ async def _all_records(address, entry_filter, remove_empty):
         )
     else:
         temperature_val = _empty_reading(log_size)
-    if rec_filter.incl_humidity:
+    if rec_filter.incl_humidity == 2:
+        humidity_val = await monitor.get_records(
+            Param.HUMIDITY2, log_size=log_size, start=begin, end=end
+        )
+    elif rec_filter.incl_humidity:
         humidity_val = await monitor.get_records(
             Param.HUMIDITY, log_size=log_size, start=begin, end=end
         )
