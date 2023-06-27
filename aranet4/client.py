@@ -549,13 +549,13 @@ class Aranet4:
         await self.device.stop_notify(self.AR4_READ_HISTORY_READINGS_V1)
         return delegate.result
 
-    async def setReadingsInterval(self, interval: int):
+    async def set_readings_interval(self, interval: int):
         """Set reading interval"""
         header = 0x90
         val = struct.pack("<BB", header, interval)
         await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
 
-    async def setHomeIntegrationEnabled(self, enabled: bool):
+    async def set_home_integration_enabled(self, enabled: bool):
         """
         Toggle smart home integrations.
         This is required to receive measurements in advertisements.
@@ -564,7 +564,7 @@ class Aranet4:
         val = struct.pack("<BB", header, 1 if enabled else 0)
         await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
 
-    async def setBluetoothRange(self, extended: bool):
+    async def set_bluetooth_range(self, extended: bool):
         """Set bluetooth range"""
         header = 0x91
         val = struct.pack("<BB", header, 1 if extended else 0)
