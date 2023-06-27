@@ -245,8 +245,8 @@ class Aranet4Advertisement:
                 raw_bytes = ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID]
 
                 # Basic info
-                value_fmt = "<BBBHBB"
-                value = struct.unpack(value_fmt, raw_bytes[0:7])
+                value_fmt = "<BBBHB"
+                value = struct.unpack(value_fmt, raw_bytes[0:6])
                 mf_data.decode(value)
                 self.manufacturer_data = mf_data
 
