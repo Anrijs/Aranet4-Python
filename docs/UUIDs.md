@@ -67,9 +67,11 @@ Service UUID before v1.2.0: `f0cd1400-95da-4f4b-9ac8-aa55d312af0c`
 # Write values
 Service UUID: `f0cd1400-95da-4f4b-9ac8-aa55d312af0c`
 
-| Characteristic UUID                  | Handle | Name                  | Type | Write value             | Parameters                                                                                    |
-|--------------------------------------|--------|-----------------------|------|-------------------------|-----------------------------------------------------------------------------------------------|
-| `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` | 0x0029 | Set Interval          | raw  | 90:XX                   | XX - Time in minutes (01,02,05,0A)                                                            |
-| `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` |        | Set history parameter | raw  | 82:XX:00:00:YY:YY:ZZ:ZZ | XX - Property (1,2,3,4), YY:YY - First index (uLE16, starts with 1),ZZ:ZZ - Max index (u16LE) |
+| Characteristic UUID                    | Name                           | Type | Write value             | Parameters                                                                                    |
+|----------------------------------------|--------------------------------|------|-------------------------|-----------------------------------------------------------------------------------------------|
+| `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` | Set Interval                   | raw  | 90:XX                   | XX - Time in minutes (01,02,05,0A)                                                            |
+| `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` | Toggle Smart Home integrations | raw  | 91:XX                   | XX - 0 = disabled, 1 = enabled                                                                |
+| `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` | Set Bluetooth range            | raw  | 92:XX                   | XX - 0 = standart, 1 = extended                                                               |
+| `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` | Set history parameter          | raw  | 82:XX:00:00:YY:YY:ZZ:ZZ | XX - Property (1,2,3,4), YY:YY - First index (uLE16, starts with 1),ZZ:ZZ - Max index (u16LE) |
 
 
