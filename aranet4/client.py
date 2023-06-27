@@ -245,8 +245,14 @@ class Aranet4Advertisement:
                 raw_bytes = ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID]
 
                 # Basic info
-                value_fmt = "<BBBHB"
-                value = struct.unpack(value_fmt, raw_bytes[0:6])
+                value_fmt = "<BBBB"
+                b0 = 255
+                if device.name.startswith("Aranet2"):
+                    value = struct.unpack(value_fmt, raw_bytes[1:5])
+                    b0 = raw_bytes[1]
+                else:
+                    value = struct.unpack(value_fmt, raw_bytes[0:4])
+                    b0 = raw_bytes[0]
                 mf_data.decode(value)
                 self.manufacturer_data = mf_data
 
@@ -263,6 +269,8 @@ class Aranet4Advertisement:
                     self.readings = CurrentReading()
                     self.readings.decode(value)
                     self.readings.name = device.name
+                else:
+                    mf_data.integrations = False
 
 
 @dataclass
