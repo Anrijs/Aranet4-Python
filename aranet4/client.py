@@ -247,7 +247,7 @@ class Aranet4Advertisement:
                 # Basic info
                 value_fmt = "<BBBB"
                 b0 = 255
-                if device.name.startswith("Aranet2"):
+                if device.name is not None and device.name.startswith("Aranet2"):
                     value = struct.unpack(value_fmt, raw_bytes[1:5])
                     b0 = raw_bytes[1]
                 else:
