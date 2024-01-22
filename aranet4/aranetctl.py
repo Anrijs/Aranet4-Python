@@ -162,7 +162,7 @@ def print_scan_result(advertisement):
     print("=======================================")
     print(f"  Name:     {advertisement.device.name}")
     print(f"  Address:  {advertisement.device.address}")
-    print(f"  RSSI:     {advertisement.device.rssi} dBm")
+    print(f"  RSSI:     {advertisement.rssi} dBm")
 
     if advertisement.readings:
         print("--------------------------------------")
