@@ -233,12 +233,14 @@ class Aranet4Advertisement:
     device: BLEDevice = None
     readings: CurrentReading = None
     manufacturer_data: ManufacturerData = None
+    rssi: int = None
 
     def __init__(self, device = None, ad_data = None):
         self.device = device
 
         if device and ad_data:
             has_manufacurer_data = Aranet4.MANUFACTURER_ID in ad_data.manufacturer_data
+            self.rssi = ad_data.rssi
 
             if has_manufacurer_data:
                 mf_data = ManufacturerData()
@@ -246,24 +248,25 @@ class Aranet4Advertisement:
 
                 # Basic info
                 value_fmt = "<BBBB"
-                b0 = 255
                 if device.name.startswith("Aranet2"):
                     value = struct.unpack(value_fmt, raw_bytes[1:5])
-                    b0 = raw_bytes[1]
                 else:
                     value = struct.unpack(value_fmt, raw_bytes[0:4])
-                    b0 = raw_bytes[0]
                 mf_data.decode(value)
                 self.manufacturer_data = mf_data
 
+                packing = None
+                if len(raw_bytes) > 7:
+                    packing = raw_bytes[7]
+
                 # Extended info / measurements
-                if len(raw_bytes) >= 24 and device.name.startswith("Aranet2"):
+                if packing == 0 and len(raw_bytes) >= 24: # Aranet2
                     value_fmt = "<HHHHBBBHHB"
                     value = struct.unpack(value_fmt, raw_bytes[8:24])
                     self.readings = CurrentReading()
                     self.readings.decode2(value)
                     self.readings.name = device.name
-                elif len(raw_bytes) >= 20:
+                elif packing == 1 and len(raw_bytes) >= 20: # Aranet4
                     value_fmt = "<HHHBBBHH"
                     value = struct.unpack(value_fmt, raw_bytes[8:21])
                     self.readings = CurrentReading()
