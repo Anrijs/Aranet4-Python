@@ -246,18 +246,18 @@ class Aranet4Advertisement:
                 mf_data = ManufacturerData()
                 raw_bytes = ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID]
 
-                # Basic info
-                value_fmt = "<BBBB"
-                if device.name.startswith("Aranet2"):
-                    value = struct.unpack(value_fmt, raw_bytes[1:5])
-                else:
-                    value = struct.unpack(value_fmt, raw_bytes[0:4])
-                mf_data.decode(value)
-                self.manufacturer_data = mf_data
-
                 packing = None
                 if len(raw_bytes) > 7:
                     packing = raw_bytes[7]
+
+                # Basic info
+                value_fmt = "<BBBB"
+                if packing == 0:
+                   value = struct.unpack(value_fmt, raw_bytes[1:5])
+                else:
+                   value = struct.unpack(value_fmt, raw_bytes[0:4])
+                mf_data.decode(value)
+                self.manufacturer_data = mf_data
 
                 # Extended info / measurements
                 if packing == 0 and len(raw_bytes) >= 24: # Aranet2
