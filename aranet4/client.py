@@ -4,6 +4,7 @@ import datetime
 from enum import IntEnum
 import re
 import struct
+import math
 from typing import List, NamedTuple
 
 from bleak import BleakClient
@@ -34,6 +35,12 @@ class Status(IntEnum):
     RED = 3
     BLUE = 4
 
+class AranetType(IntEnum):
+    """Enum for the different Aranet devices"""
+    ARANET4 = 0
+    ARANET2 = 1
+    ARANET_RADIATION = 2
+    UNKNOWN = 255
 
 @dataclass
 class Aranet4HistoryDelegate:
@@ -84,10 +91,21 @@ class CurrentReading:
 
     name: str = ""
     version: str = ""
+    type: AranetType = AranetType.UNKNOWN
+
+    # Aranet2, Aranet4
     temperature: float = -1
     humidity: float = -1
+
+    # Aranet 4
     pressure: float = -1
     co2: int = -1
+
+    # Aranet Radiation
+    radiation_rate: float = -1
+    radiation_total: float = -1
+    radiation_duration: int = -1
+
     battery: int = -1
     status: int = -1
     status_t: int = -1
@@ -97,8 +115,66 @@ class CurrentReading:
     stored: int = -1
     counter: int = -1
 
-    def decode(self, value: tuple):
-        """Process data from current log_size and process before storing"""
+    def toString(self, advertisement=None):
+        ret = "=======================================\n"
+        ret += f"  Name:     {self.name}\n"
+
+        if advertisement:
+            ret += f"  Address:  {advertisement.device.address}\n"
+            ret += f"  RSSI:     {advertisement.rssi} dBm\n"
+
+        if self.stored > 0:
+            ret += f"  Logs:     {self.stored}\n"
+
+        ret += "---------------------------------------\n"
+
+        if self.type == AranetType.ARANET4:
+            ret += f"  CO2:            {self.co2} ppm\n"
+            ret += f"  Temperature:    {self.temperature:.01f} \u00b0C\n"
+            ret += f"  Humidity:       {self.humidity} %\n"
+            ret += f"  Pressure:       {self.pressure:.01f} hPa\n"
+            ret += f"  Battery:        {self.battery} %\n"
+            ret += f"  Status Display: {self.status.name}\n"
+            ret += f"  Age:            {self.ago}/{self.interval}\n"
+        elif self.type == AranetType.ARANET2:
+            ret += f"  Temperature:    {self.temperature:.01f} \u00b0C\n"
+            ret += f"  Humidity:       {self.humidity} %\n"
+            ret += f"  Battery:        {self.battery} %\n"
+            ret += f"  Status Temp.:   {self.status_t.name}\n"
+            ret += f"  Status Humid.:  {self.status_h.name}\n"
+            ret += f"  Age:            {self.ago}/{self.interval}\n"
+        elif self.type == AranetType.ARANET_RADIATION:
+            m = math.floor(self.radiation_duration / 60 % 60)
+            h = math.floor(self.radiation_duration / 3600 % 24)
+            d = math.floor(self.radiation_duration / 86400)
+
+            dose_duration = str(m) + "m"
+            if h > 0: dose_duration = str(h) + "h " + dose_duration
+            if d > 0: dose_duration = str(d) + "d " + dose_duration
+
+            ret += f"  Dose rate:      {self.radiation_rate:.02f} uSv/h\n"
+            ret += f"  Dose total:     {self.radiation_total:.04f} uSv/{dose_duration}\n"
+            ret += f"  Battery:        {self.battery} %\n"
+            ret += f"  Age:            {self.ago}/{self.interval}\n"
+        else:
+            ret += f"  Unknown device type\n"
+
+        return ret
+
+    def decode(self, value: tuple, type: AranetType, gatt=False):
+        """Process advertisement or gatt data"""
+
+        self.type = type
+        if type == AranetType.ARANET4:
+            self._decode_aranet4(value, gatt)
+        elif type == AranetType.ARANET2:
+            self._decode_aranet2(value, gatt)
+        elif type == AranetType.ARANET_RADIATION:
+            self._decode_aranetR(value, gatt)
+
+    def _decode_aranet4(self, value: tuple, gatt=False):
+        """Process Aranet4 data - CO2, Temperature, Humidity, Pressure"""
+
         self.co2 = self._set(Param.CO2, value[0])
         self.temperature = self._set(Param.TEMPERATURE, value[1])
         self.pressure = self._set(Param.PRESSURE, value[2])
@@ -110,8 +186,8 @@ class CurrentReading:
             self.interval = value[6]
             self.ago = value[7]
 
-    def decode2(self, value: tuple, gatt=False):
-        """Process data from current log_size and process before storing"""
+    def _decode_aranet2(self, value: tuple, gatt=False):
+        """Process Aranet2 data - Temperature, Humidity"""
 
         # order from gatt and advertisements are different
         if gatt:
@@ -124,11 +200,32 @@ class CurrentReading:
         else:
             self.temperature = self._set(Param.TEMPERATURE, value[1])
             self.humidity = self._set(Param.HUMIDITY2, value[3])
-            self.battery = value[5]
             self.status_h, self.status_t = self._decode_status_flags(value[6])
+            self.battery = value[5]
             self.interval = value[7]
             self.ago = value[8]
             self.counter = value[9]
+
+    def _decode_aranetR(self, value: tuple, gatt=False):
+        """Process Aranet Radiation data - radiation dose"""
+        # order from gatt and advertisements are different
+        if gatt:
+            self.radiation_duration = value[7]
+            self.radiation_rate = value[4] / 1000
+            self.radiation_total = value[6] / 1000000
+            # self.status = Status(value[?])
+            self.battery = value[3]
+            self.interval = value[1]
+            self.ago = value[2]
+        else:
+            self.radiation_duration = value[1]
+            self.radiation_rate = value[2] / 1000
+            self.radiation_total = value[0] / 1000000
+            self.status = Status(value[5])
+            self.battery = value[4]
+            self.interval = value[6]
+            self.ago = value[7]
+            self.counter = value[8]
 
     @staticmethod
     def _decode_status_flags(status):
@@ -244,33 +341,39 @@ class Aranet4Advertisement:
 
             if has_manufacurer_data:
                 mf_data = ManufacturerData()
-                raw_bytes = ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID]
-
-                packing = None
-                if len(raw_bytes) > 7:
-                    packing = raw_bytes[7]
+                raw_bytes = bytearray(ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID])
 
                 # Basic info
+                if raw_bytes[1] != 33:
+                    # For some reason, this is dropped for Aranet4
+                    raw_bytes.insert(0,0)
+
                 value_fmt = "<BBBB"
-                if packing == 0:
-                   value = struct.unpack(value_fmt, raw_bytes[1:5])
-                else:
-                   value = struct.unpack(value_fmt, raw_bytes[0:4])
+                value = struct.unpack(value_fmt, raw_bytes[1:5])
                 mf_data.decode(value)
                 self.manufacturer_data = mf_data
 
                 # Extended info / measurements
-                if packing == 0 and len(raw_bytes) >= 24: # Aranet2
+                aranetv = raw_bytes[0]
+                if len(raw_bytes) < 9:
+                    mf_data.integrations = False
+                elif aranetv == 0: # Aranet4
+                    value_fmt = "<HHHBBBHH"
+                    value = struct.unpack(value_fmt, raw_bytes[9:22])
+                    self.readings = CurrentReading()
+                    self.readings.decode(value, AranetType.ARANET4)
+                    self.readings.name = device.name
+                elif aranetv == 1: # Aranet2
                     value_fmt = "<HHHHBBBHHB"
                     value = struct.unpack(value_fmt, raw_bytes[8:24])
                     self.readings = CurrentReading()
-                    self.readings.decode2(value)
+                    self.readings.decode(value, AranetType.ARANET2)
                     self.readings.name = device.name
-                elif packing == 1 and len(raw_bytes) >= 20: # Aranet4
-                    value_fmt = "<HHHBBBHH"
-                    value = struct.unpack(value_fmt, raw_bytes[8:21])
+                elif aranetv == 2: # Aranet Radiation
+                    value_fmt = "<IIHBBBHHB"
+                    value = struct.unpack(value_fmt, raw_bytes[6:24])
                     self.readings = CurrentReading()
-                    self.readings.decode(value)
+                    self.readings.decode(value, AranetType.ARANET_RADIATION)
                     self.readings.name = device.name
                 else:
                     mf_data.integrations = False
@@ -390,11 +493,17 @@ class Aranet4:
 
         if aranet2_char:
             uuid = self.AR2_READ_CURRENT_READINGS
-            # co2, temp, pressure, humidity, battery, status
-            value_fmt = "<HHHBHHB"
             raw_bytes = await self.device.read_gatt_char(uuid)
-            value = struct.unpack(value_fmt, raw_bytes)
-            readings.decode2(value, True)
+
+            if len(raw_bytes) > 12:
+                # radiation
+                value_fmt = "<HHHBHHIIHH"
+                value = struct.unpack(value_fmt, raw_bytes[0:23])
+                readings.decode(value, AranetType.ARANET_RADIATION, True)
+            else:
+                value_fmt = "<HHHBHHB"
+                value = struct.unpack(value_fmt, raw_bytes)
+                readings.decode(value, AranetType.ARANET2, True)
         else:
             if details:
                 uuid = self.AR4_READ_CURRENT_READINGS_DET
@@ -407,7 +516,7 @@ class Aranet4:
 
             raw_bytes = await self.device.read_gatt_char(uuid)
             value = struct.unpack(value_fmt, raw_bytes)
-            readings.decode(value)
+            readings.decode(value, AranetType.ARANET4)
         return readings
 
     async def get_interval(self) -> int:
@@ -651,9 +760,7 @@ class Aranet4Scanner:
 
     def _process_advertisement(self, device, ad_data):
         """Processes Aranet4 advertisement data"""
-
         adv = Aranet4Advertisement(device, ad_data)
-
         self.on_scan(adv)
 
     def __init__(self, on_scan):
@@ -677,7 +784,7 @@ async def _find_nearby(detect_callback: callable, duration: int) -> List[BLEDevi
     await scanner.stop()
     return [device
             for device in scanner.scanner.discovered_devices
-            if "Aranet4" in device.name or "Aranet2" in device.name]
+            if "Aranet" in device.name]
 
 
 def find_nearby(detect_callback: callable, duration: int = 5) -> List[BLEDevice]:

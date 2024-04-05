@@ -10,37 +10,6 @@ import requests
 
 from aranet4 import client
 
-format_str = """
---------------------------------------
- Connected: {current.name} | {current.version}
- Updated {current.ago} s ago. Intervals: {current.interval} s
- {current.stored} total log_size
- --------------------------------------
- CO2:            {current.co2} ppm
- Temperature:    {current.temperature:.01f} \u00b0C
- Humidity:       {current.humidity} %
- Pressure:       {current.pressure:.01f} hPa
- Battery:        {current.battery} %
- Status Display: {current.status.name}
- Age:            {current.ago}/{current.interval}
---------------------------------------
-"""
-
-format_str_2 = """
---------------------------------------
- Connected: {current.name} | {current.version}
- Updated {current.ago} s ago. Intervals: {current.interval} s
- {current.stored} total log_size
- --------------------------------------
- Temperature:    {current.temperature:.01f} \u00b0C
- Humidity:       {current.humidity} %
- Battery:        {current.battery} %
- Status Temp.:   {current.status_t.name}
- Status Humid.:  {current.status_h.name}
- Age:            {current.ago}/{current.interval}
---------------------------------------
-"""
-
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
     parser.add_argument("device_mac", nargs='?', help="Aranet4 Bluetooth Address")
@@ -159,28 +128,13 @@ def print_scan_result(advertisement):
     if not advertisement.device:
         return
 
-    print("=======================================")
-    print(f"  Name:     {advertisement.device.name}")
-    print(f"  Address:  {advertisement.device.address}")
-    print(f"  RSSI:     {advertisement.rssi} dBm")
-
     if advertisement.readings:
-        print("--------------------------------------")
-        if advertisement.readings.co2 >= 0:
-            print(f"  CO2:            {advertisement.readings.co2} pm")
-        print(f"  Temperature:    {advertisement.readings.temperature:.01f} \u00b0C")
-        print(f"  Humidity:       {advertisement.readings.humidity} %")
-        if advertisement.readings.pressure >= 0:
-            print(f"  Pressure:       {advertisement.readings.pressure:.01f} hPa")
-        print(f"  Battery:        {advertisement.readings.battery} %")
-        if advertisement.readings.status >= 0:
-            print(f"  Status Disp.:   {advertisement.readings.status.name}")
-        if advertisement.readings.status_t >= 0 and advertisement.readings.status_h >= 0:
-            print(f"  Status Temp.:   {advertisement.readings.status_t.name}")
-            print(f"  Status Humid.:  {advertisement.readings.status_h.name}")
-        print(f"  Age:            {advertisement.readings.ago}/{advertisement.readings.interval}")
-        print(f"  Counter:        {advertisement.readings.counter}")
-
+        print(advertisement.readings.toString(advertisement))
+    else:
+        print("=======================================")
+        print(f"  Name:     {advertisement.device.name}")
+        print(f"  Address:  {advertisement.device.address}")
+        print(f"  RSSI:     {advertisement.rssi} dBm")
     print()
 
 
@@ -262,9 +216,7 @@ def main(argv):
             write_csv(args.output, records)
     else:
         current = client.get_current_readings(args.device_mac)
-        s = format_str_2 if current.name.startswith("Aranet2") else format_str
-        s = s.format(current=current)
-        print(s)
+        print(current.toString())
         if args.url:
             post_data(args.url, current)
 
