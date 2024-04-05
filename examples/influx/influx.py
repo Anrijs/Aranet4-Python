@@ -55,7 +55,7 @@ def main(argv):
                                                  entry_filter={"last": limit})
     else:
         print("Fetching current readings...")
-        current = aranet4.client.get_current_readings()
+        current = aranet4.client.get_current_readings(mac_address=device_mac)
 
         now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
         delta_ago = datetime.timedelta(seconds=current.ago)
