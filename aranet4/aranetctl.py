@@ -94,6 +94,12 @@ def print_records(records):
         char_repeat += 6
     if records.filter.incl_pressure:
         char_repeat += 11
+    if records.filter.incl_rad_dose_rate:
+        char_repeat += 11
+    if records.filter.incl_rad_dose:
+        char_repeat += 11
+    if records.filter.incl_rad_dose_total:
+        char_repeat += 12
     print("-" * char_repeat)
     print(f"{'Device Name':<15}: {records.name:>20}")
     print(f"{'Device Version':<15}: {records.version:>20}")
@@ -107,10 +113,16 @@ def print_records(records):
         print(" humid |", end="")
     if records.filter.incl_pressure:
         print(" pressure |", end="")
+    if records.filter.incl_rad_dose:
+        print(" rad_dose |", end="")
+    if records.filter.incl_rad_dose_rate:
+        print(" rad_rate |", end="")
+    if records.filter.incl_rad_dose_total:
+        print(" rad_total |", end="")
     print("")
     print("-" * char_repeat)
-    filtered_values = records.value
-    for record_id, line in enumerate(filtered_values, start=records.filter.begin):
+
+    for record_id, line in enumerate(records.value, start=records.filter.begin):
         print(f"{record_id:>4d} | {line.date.isoformat()} |", end="")
         if records.filter.incl_co2:
             print(f" {line.co2:>6d} |", end="")
@@ -120,6 +132,12 @@ def print_records(records):
             print(f" {line.humidity:>3.1f} |", end="")
         if records.filter.incl_pressure:
             print(f" {line.pressure:>8.1f} |", end="")
+        if records.filter.incl_rad_dose:
+            print(f" {line.rad_dose/1000:>8.3f} |", end="")
+        if records.filter.incl_rad_dose_rate:
+            print(f" {line.rad_dose_rate/1000:>8.3f} |", end="")
+        if records.filter.incl_rad_dose_total:
+            print(f" {line.rad_dose_total/1000000:>9.4f} |", end="")
         print("")
     print("-" * char_repeat)
 
@@ -135,6 +153,7 @@ def print_scan_result(advertisement):
         print(f"  Name:     {advertisement.device.name}")
         print(f"  Address:  {advertisement.device.address}")
         print(f"  RSSI:     {advertisement.rssi} dBm")
+        print()
     print()
 
 
@@ -154,14 +173,17 @@ def write_csv(filename, log_data):
             fieldnames.append("humidity")
         if log_data.filter.incl_pressure:
             fieldnames.append("pressure")
+        if log_data.filter.incl_rad_dose:
+            fieldnames.append("rad_dose")
+        if log_data.filter.incl_rad_dose_rate:
+            fieldnames.append("rad_dose_rate")
+        if log_data.filter.incl_rad_dose_total:
+            fieldnames.append("rad_dose_total")
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction="ignore")
 
         writer.writeheader()
 
-        filtered_values = log_data.value[
-            log_data.filter.begin - 1 : log_data.filter.end
-        ]
-        for line in filtered_values:
+        for line in log_data.value:
             writer.writerow(asdict(line))
 
 
@@ -171,14 +193,8 @@ def post_data(url, current):
     delta_ago = datetime.timedelta(seconds=current.ago)
     t = now - delta_ago
     t = t.replace(second=0)  # epoch, floored to minutes
-    data = {
-        "time": t.timestamp(),
-        "co2": current.co2,
-        "temperature": current.temperature,
-        "pressure": current.pressure,
-        "humidity": current.humidity,
-        "battery": current.battery,
-    }
+    data = current.toDict()
+    data["time"] = t.timestamp()
     r = requests.post(
         url,
         data=data,

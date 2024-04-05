@@ -24,7 +24,10 @@ class Param(IntEnum):
     PRESSURE = 3
     CO2 = 4
     HUMIDITY2 = 5
-
+    PULSES = 6
+    RADIATION_DOSE = 7
+    RADIATION_DOSE_RATE = 8
+    RADIATION_DOSE_INTEGRAL = 9
 
 class Status(IntEnum):
     """Enum for the different status colors"""
@@ -152,14 +155,35 @@ class CurrentReading:
             if h > 0: dose_duration = str(h) + "h " + dose_duration
             if d > 0: dose_duration = str(d) + "d " + dose_duration
 
-            ret += f"  Dose rate:      {self.radiation_rate:.02f} uSv/h\n"
-            ret += f"  Dose total:     {self.radiation_total:.04f} uSv/{dose_duration}\n"
+            ret += f"  Dose rate:      {self.radiation_rate/1000:.02f} uSv/h\n"
+            ret += f"  Dose total:     {self.radiation_total/1000000:.04f} mSv/{dose_duration}\n"
             ret += f"  Battery:        {self.battery} %\n"
             ret += f"  Age:            {self.ago}/{self.interval}\n"
         else:
             ret += f"  Unknown device type\n"
 
         return ret
+
+    def toDict(self):
+        data = {
+            "battery": self.battery,
+            "type": self.type.name
+        }
+
+        if self.type == AranetType.ARANET2:
+            data["temperature"] = self.temperature
+            data["humidity"] = self.humidity
+        elif self.type == AranetType.ARANET4:
+            data["co2"] = self.co2
+            data["temperature"] = self.temperature
+            data["pressure"] = self.pressure
+            data["humidity"] = self.humidity
+        elif self.type == AranetType.ARANET_RADIATION:
+            data["radiation_rate"] = self.radiation_rate
+            data["radiation_total"] = self.radiation_total
+            data["radiation_duration"] = self.radiation_duration
+
+        return data
 
     def decode(self, value: tuple, type: AranetType, gatt=False):
         """Process advertisement or gatt data"""
@@ -210,18 +234,16 @@ class CurrentReading:
         """Process Aranet Radiation data - radiation dose"""
         # order from gatt and advertisements are different
         if gatt:
-            self.radiation_duration = value[7]
-            self.radiation_rate = value[4] / 1000
-            self.radiation_total = value[6] / 1000000
-            # self.status = Status(value[?])
+            self.radiation_duration = value[6]
+            self.radiation_rate = value[4]
+            self.radiation_total = value[5]
             self.battery = value[3]
             self.interval = value[1]
             self.ago = value[2]
         else:
+            self.radiation_total = value[0]
             self.radiation_duration = value[1]
-            self.radiation_rate = value[2] / 1000
-            self.radiation_total = value[0] / 1000000
-            self.status = Status(value[5])
+            self.radiation_rate = value[2]
             self.battery = value[4]
             self.interval = value[6]
             self.ago = value[7]
@@ -268,6 +290,15 @@ class CurrentReading:
         elif param == Param.HUMIDITY2:
             invalid_reading_flag = value >> 15 == 1
             multiplier = 0.1
+        elif param == Param.RADIATION_DOSE:
+            invalid_reading_flag = value >> 15 == 1
+            multiplier = 1 # nSv
+        elif param == Param.RADIATION_DOSE_RATE:
+            invalid_reading_flag = value >> 15 == 1
+            multiplier = 10 # nSv/h
+        elif param == Param.RADIATION_DOSE_INTEGRAL:
+            invalid_reading_flag = value >> 15 == 1
+            multiplier = 1 # nSv
 
         if invalid_reading_flag:
             return -1
@@ -344,7 +375,7 @@ class Aranet4Advertisement:
                 raw_bytes = bytearray(ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID])
 
                 # Basic info
-                if raw_bytes[1] != 33:
+                if raw_bytes[0] == 33 and raw_bytes[1] != 33:
                     # For some reason, this is dropped for Aranet4
                     raw_bytes.insert(0,0)
 
@@ -388,6 +419,9 @@ class RecordItem:
     humidity: int
     pressure: float
     co2: int
+    rad_dose: float
+    rad_dose_rate: float
+    rad_dose_total: float
 
 
 @dataclass
@@ -400,6 +434,9 @@ class Filter:
     incl_humidity: int
     incl_pressure: bool
     incl_co2: bool
+    incl_rad_dose: bool
+    incl_rad_dose_rate: bool
+    incl_rad_dose_total: bool
 
 
 @dataclass
@@ -495,10 +532,11 @@ class Aranet4:
             uuid = self.AR2_READ_CURRENT_READINGS
             raw_bytes = await self.device.read_gatt_char(uuid)
 
-            if len(raw_bytes) > 12:
+            # TODO: Can we use byte ar position 0 to detect type?
+            if len(raw_bytes) >= 28:
                 # radiation
-                value_fmt = "<HHHBHHIIHH"
-                value = struct.unpack(value_fmt, raw_bytes[0:23])
+                value_fmt = "<HHHBIQQB"
+                value = struct.unpack(value_fmt, raw_bytes[0:28])
                 readings.decode(value, AranetType.ARANET_RADIATION, True)
             else:
                 value_fmt = "<HHHBHHB"
@@ -609,14 +647,29 @@ class Aranet4:
             )
 
             header = HistoryHeader(*struct.unpack("<BHHHHB", packet[:10]))
+            packet = packet[10:]
 
             if header.param != param.value or header.count == 0:
                 await asyncio.sleep(0.1)
                 continue
 
-            pattern = "<B" if param.value == Param.HUMIDITY else "<H"
+            if param.value == Param.HUMIDITY:
+                pattern = "<B"
+            elif param.value == Param.RADIATION_DOSE:
+                pattern = "<Hx"
+            elif param.value == Param.RADIATION_DOSE_RATE:
+                pattern = "<Hx"
+            elif param.value == Param.RADIATION_DOSE_INTEGRAL:
+                pattern = "<Q"
+            else:
+                pattern = "<H"
 
-            data_values = struct.iter_unpack(pattern, packet[10:])
+            # trim to multiples of pattern size
+            plen = len(packet)
+            packet = packet[:plen - plen % struct.calcsize(pattern)]
+
+            # extract values
+            data_values = struct.iter_unpack(pattern, packet)
             for idx, value in enumerate(data_values, header.start - 1):
                 if idx > end or idx == header.start - 1 + header.count:
                     break
@@ -832,6 +885,14 @@ async def _all_records(address, entry_filter, remove_empty):
         entry_filter["co2"] = False
         if entry_filter.get("humi", False):
             entry_filter["humi"] = 2 #v2 humidity
+    elif dev_name.startswith("Aranet\u2622"):
+        entry_filter["pres"] = False
+        entry_filter["co2"] = False
+        entry_filter["humi"] = False
+        entry_filter["temp"] = False
+        entry_filter["rad_dose"] = entry_filter.get("rad_dose", True)
+        entry_filter["rad_dose_rate"] = entry_filter.get("rad_dose_rate", True)
+        entry_filter["rad_dose_total"] = entry_filter.get("rad_dose_total", True)
 
     log_size = await monitor.get_total_readings()
     log_points = _log_times(now, log_size, interval, last_log)
@@ -843,6 +904,9 @@ async def _all_records(address, entry_filter, remove_empty):
         entry_filter.get("humi", True),
         entry_filter.get("pres", True),
         entry_filter.get("co2", True),
+        entry_filter.get("rad_dose", False),
+        entry_filter.get("rad_dose_rate", False),
+        entry_filter.get("rad_dose_total", False),
     )
 
     if begin < 0 or end < 0:
@@ -878,11 +942,30 @@ async def _all_records(address, entry_filter, remove_empty):
         )
     else:
         co2_val = _empty_reading(log_size)
+    if rec_filter.incl_rad_dose:
+        rad_dose_val = await monitor.get_records(
+            Param.RADIATION_DOSE, log_size=log_size, start=begin, end=end
+        )
+    else:
+        rad_dose_val = _empty_reading(log_size)
+    if rec_filter.incl_rad_dose_rate:
+        rad_dose_rate_val = await monitor.get_records(
+            Param.RADIATION_DOSE_RATE, log_size=log_size, start=begin, end=end
+        )
+    else:
+        rad_dose_total_val = _empty_reading(log_size)
+    if rec_filter.incl_rad_dose_total:
+        rad_dose_total_val = await monitor.get_records(
+            Param.RADIATION_DOSE_INTEGRAL, log_size=log_size, start=begin, end=end
+        )
+    else:
+        rad_dose_total_val = _empty_reading(log_size)
+####
     # Store returned data in dataclass
-    data = zip(log_points, co2_val, temperature_val, pressure_val, humidity_val)
+    data = zip(log_points, co2_val, temperature_val, pressure_val, humidity_val, rad_dose_val, rad_dose_rate_val, rad_dose_total_val)
     record = Record(dev_name, dev_version, log_size, rec_filter)
-    for date, co2, temp, pres, hum in data:
-        record.value.append(RecordItem(date, temp, hum, pres, co2))
+    for date, co2, temp, pres, hum, rad, rad_rate, rad_integral in data:
+        record.value.append(RecordItem(date, temp, hum, pres, co2, rad, rad_rate, rad_integral))
     if (remove_empty):
         record.value = record.value[begin-1:end+1]
     return record
