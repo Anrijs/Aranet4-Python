@@ -12,7 +12,7 @@ data_file = here.joinpath("data", "aranet4_readings.csv")
 
 
 def build_data():
-    log_filter = client.Filter(1, 14, True, True, True, True)
+    log_filter = client.Filter(1, 14, True, True, True, True, True, True, True)
     records = client.Record("mock_device", "v1234", 14, log_filter)
     with open(data_file, mode="r") as csvfile:
         reader = csv.DictReader(csvfile)

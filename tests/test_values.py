@@ -5,10 +5,12 @@ from unittest import mock
 
 from aranet4 import client
 from aranet4 import aranetctl
+from aranet4.client import AranetType
 
 result = client.CurrentReading(
     name="Aranet4 1234Z",
     version="v0.4.4",
+    type=AranetType.ARANET4,
     temperature=21.75,
     humidity=48,
     pressure=1016.5,
@@ -17,25 +19,24 @@ result = client.CurrentReading(
     status=client.Status.GREEN,
     interval=300,
     ago=44,
-    stored=2016,
+    stored=2016
 )
 
 
-device_readings = """
---------------------------------------
- Connected: Aranet4 1234Z | v0.4.4
- Updated 44 s ago. Intervals: 300 s
- 2016 total log_size
- --------------------------------------
- CO2:            933 ppm
- Temperature:    21.8 °C
- Humidity:       48 %
- Pressure:       1016.5 hPa
- Battery:        93 %
- Status Display: GREEN
---------------------------------------
+device_readings = """=======================================
+  Name:     Aranet4 1234Z
+  Logs:     2016
+---------------------------------------
+  CO2:            933 ppm
+  Temperature:    21.8 °C
+  Humidity:       48 %
+  Pressure:       1016.5 hPa
+  Battery:        93 %
+  Status Display: GREEN
+  Age:            44/300
 
 """
+
 base_args = dict(
     device_mac="11:22:33:44:55:66",
     end=None,
