@@ -385,25 +385,25 @@ class Aranet4Advertisement:
 
                 # Extended info / measurements
                 aranetv = raw_bytes[0]
-                if len(raw_bytes) < 9:
-                    mf_data.integrations = False
-                elif aranetv == 0: # Aranet4
-                    value_fmt = "<HHHBBBHH"
-                    value = struct.unpack(value_fmt, raw_bytes[9:22])
-                    self.readings = CurrentReading()
-                    self.readings.decode(value, AranetType.ARANET4)
-                    self.readings.name = device.name
+
+                if aranetv == 0: # Aranet4
+                    value_fmt = "<xxxxxxxxxHHHBBBHH"
+                    aranetv = AranetType.ARANET4
                 elif aranetv == 1: # Aranet2
-                    value_fmt = "<HHHHBBBHHB"
-                    value = struct.unpack(value_fmt, raw_bytes[8:24])
-                    self.readings = CurrentReading()
-                    self.readings.decode(value, AranetType.ARANET2)
-                    self.readings.name = device.name
+                    value_fmt = "<xxxxxxxxHHHHBBBHHB"
+                    aranetv = AranetType.ARANET2
                 elif aranetv == 2: # Aranet Radiation
-                    value_fmt = "<IIHBBBHHB"
-                    value = struct.unpack(value_fmt, raw_bytes[6:24])
+                    value_fmt = "<xxxxxxIIHBBBHHB"
+                    aranetv = AranetType.ARANET_RADIATION
+                else:
+                    value_fmt = ""
+                    aranetv = None
+
+                end = struct.calcsize(value_fmt)
+                if end > 0 and len(raw_bytes[:end]) == end:
+                    value = struct.unpack(value_fmt, raw_bytes[:end])
                     self.readings = CurrentReading()
-                    self.readings.decode(value, AranetType.ARANET_RADIATION)
+                    self.readings.decode(value, aranetv)
                     self.readings.name = device.name
                 else:
                     mf_data.integrations = False
