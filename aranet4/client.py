@@ -374,11 +374,10 @@ class Aranet4Advertisement:
                 mf_data = ManufacturerData()
                 raw_bytes = bytearray(ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID])
 
-                # Basic info
-                if raw_bytes[0] == 33 and raw_bytes[1] != 33:
-                    # For some reason, this is dropped for Aranet4
+                if (not device.name and len(raw_bytes) in [7,22]) or "Aranet4" in device.name:
                     raw_bytes.insert(0,0)
 
+                # Basic info
                 value_fmt = "<BBBB"
                 value = struct.unpack(value_fmt, raw_bytes[1:5])
                 mf_data.decode(value)
