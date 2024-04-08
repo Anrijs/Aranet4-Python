@@ -515,6 +515,11 @@ class Aranet4:
         self.device = BleakClient(address)
         self.reading = True
 
+    def __del__(self):
+        """Close remote"""
+        if self.device.is_connected:
+            asyncio.shield(self.device.disconnect())
+
     async def connect(self):
         """Connect to remote device"""
         await self.device.connect()
