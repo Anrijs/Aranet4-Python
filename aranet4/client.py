@@ -373,8 +373,9 @@ class Aranet4Advertisement:
             if has_manufacurer_data:
                 mf_data = ManufacturerData()
                 raw_bytes = bytearray(ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID])
-
-                if (not device.name and len(raw_bytes) in [7,22]) or "Aranet4" in device.name:
+                cond_name = device.name and "Aranet4" in device.name
+                cond_len  = not device.name and len(raw_bytes) in [7,22]
+                if cond_name or cond_len:
                     raw_bytes.insert(0,0)
 
                 # Basic info
