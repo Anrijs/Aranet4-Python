@@ -367,12 +367,16 @@ class Aranet4Advertisement:
         self.device = device
 
         if device and ad_data:
-            has_manufacurer_data = Aranet4.MANUFACTURER_ID in ad_data.manufacturer_data
+            has_manufacturer_data = Aranet4.MANUFACTURER_ID in ad_data.manufacturer_data
             self.rssi = ad_data.rssi
 
-            if has_manufacurer_data:
+            if has_manufacturer_data:
                 mf_data = ManufacturerData()
                 raw_bytes = bytearray(ad_data.manufacturer_data[Aranet4.MANUFACTURER_ID])
+                if len(raw_bytes) < 5:
+                    # invalid manufacturer data
+                    return
+
                 cond_name = device.name and "Aranet4" in device.name
                 cond_len  = not device.name and len(raw_bytes) in [7,22]
                 if cond_name or cond_len:
@@ -383,6 +387,9 @@ class Aranet4Advertisement:
                 value = struct.unpack(value_fmt, raw_bytes[1:5])
                 mf_data.decode(value)
                 self.manufacturer_data = mf_data
+
+                if not mf_data.integrations:
+                    return
 
                 # Extended info / measurements
                 aranetv = raw_bytes[0]
