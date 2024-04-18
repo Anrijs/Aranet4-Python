@@ -297,7 +297,7 @@ class CurrentReading:
             invalid_reading_flag = value >> 15 == 1
             multiplier = 10 # nSv/h
         elif param == Param.RADIATION_DOSE_INTEGRAL:
-            invalid_reading_flag = value >> 15 == 1
+            invalid_reading_flag = value >> 63 == 1
             multiplier = 1 # nSv
 
         if invalid_reading_flag:
