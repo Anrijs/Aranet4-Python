@@ -965,7 +965,7 @@ async def _all_records(address, entry_filter, remove_empty):
             Param.RADIATION_DOSE_RATE, log_size=log_size, start=begin, end=end
         )
     else:
-        rad_dose_total_val = _empty_reading(log_size)
+        rad_dose_rate_val = _empty_reading(log_size)
     if rec_filter.incl_rad_dose_total:
         rad_dose_total_val = await monitor.get_records(
             Param.RADIATION_DOSE_INTEGRAL, log_size=log_size, start=begin, end=end
