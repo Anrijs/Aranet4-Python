@@ -368,7 +368,7 @@ class Aranet4Advertisement:
 
         if device and ad_data:
             has_manufacturer_data = Aranet4.MANUFACTURER_ID in ad_data.manufacturer_data
-            self.rssi = ad_data.rssi
+            self.rssi = getattr(ad_data, 'rssi', None)
 
             if has_manufacturer_data:
                 mf_data = ManufacturerData()
