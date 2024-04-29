@@ -454,6 +454,70 @@ class Record:
     filter: Filter
     value: List[RecordItem] = field(default_factory=list)
 
+@dataclass
+class SensorState:
+    """dataclass to store sensor state values"""
+
+    type: AranetType = AranetType.UNKNOWN
+    buzzerSetting: str = "unknown"
+    calibrationState: str = "unknown"
+    calibrationProgress: int = 0
+    warningPreset: str = "unknown"
+    isLoRaEnabled: bool = False
+    temperatureUnit: str = "unknwonw"
+    isPulseBeepOn: bool = False
+    isUsingCustomThreshold: bool = False
+    isAutomaticCalibrationEnabled: bool = False
+    radiationDisplayUnits: str = "unknwon"
+    isBuzzerAvailable: bool = False
+    bluetoothRange: str = "unknown"
+    isOpenForIntegration: bool = False
+
+    def decode(self, t):
+        n = t[0] == 242 # Aranet2
+        u = t[0] == 241 # Aranet4
+        l = t[0] == 244 # Aranet Radiation
+        c = format(ord(chr(t[1])), '08b')[::-1]
+        o = format(ord(chr(t[2])), '08b')[::-1]
+
+        if u:
+            self.type = AranetType.ARANET4
+        elif n:
+            self.type = AranetType.ARANET2
+        elif l:
+            self.type = AranetType.ARANET_RADIATION
+        else:
+            self.type = AranetType.UNKNOWN
+
+        self.buzzerSetting = self.cond(c[0], self.cond(c[1], "each", "off"), "off")
+        self.calibrationState = self.cond(u, self.parseCalibrationState(t[1]), "none")
+        self.calibrationProgress = self.cond(u, t[3], 0)
+        self.warningPreset = self.cond(n, self.cond(t[3] == 1, "ISO", "custom"), "none")
+        self.isLoRaEnabled = self.cond(c[4], True, False)
+        self.temperatureUnit = self.cond(l, "none", self.cond(c[5], "C", "D"))
+        self.isPulseBeepOn = self.cond(l, _eval(c[5]), False)
+        self.isUsingCustomThreshold = l and c[6]
+        self.isAutomaticCalibrationEnabled = u and c[7]
+        self.radiationDisplayUnits = self.cond(l, self.cond(c[7], "Sv", "rem"), "none")
+        self.isBuzzerAvailable = self.cond(u, _eval(o[0]), l)
+        self.bluetoothRange = self.cond(o[1], "extended", "normal")
+        self.isOpenForIntegration = _eval(o[7])
+
+    @staticmethod
+    def parseCalibrationState(e):
+        t = format(ord(chr(e)), '08b')[::-1]
+        return SensorState.cond(
+            t[3],
+            SensorState.cond(t[2], "inErrorState", "endRequest"),
+            SensorState.cond(t[2], "inProgress", "notActive")
+        )
+
+    @staticmethod
+    def cond(check, tru, fal):
+        if _eval(check):
+            return tru
+        return fal
+
 
 class HistoryHeader(NamedTuple):
     param: int
@@ -494,6 +558,8 @@ class Aranet4:
     AR4_READ_TOTAL_READINGS = "f0cd2001-95da-4f4b-9ac8-aa55d312af0c"
     AR4_READ_HISTORY_READINGS_V1 = "f0cd2003-95da-4f4b-9ac8-aa55d312af0c"
     AR4_READ_HISTORY_READINGS_V2 = "f0cd2005-95da-4f4b-9ac8-aa55d312af0c"
+    AR4_READ_SENSOR_STATE = "f0cd1401-95da-4f4b-9ac8-aa55d312af0c"
+
 
     # Read / Generic servce
     GENERIC_READ_DEVICE_NAME = "00002a00-0000-1000-8000-00805f9b34fb"
@@ -726,13 +792,17 @@ class Aranet4:
         await self.device.stop_notify(self.AR4_READ_HISTORY_READINGS_V1)
         return delegate.result
 
-    async def set_readings_interval(self, interval: int):
+    async def set_readings_interval(self, interval: int, verify: bool=True):
         """Set reading interval"""
         header = 0x90
         val = struct.pack("<BB", header, interval)
         await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
+        if verify:
+            iv = await self.get_interval()
+            return interval == (iv / 60)
+        return True
 
-    async def set_home_integration_enabled(self, enabled: bool):
+    async def set_home_integration_enabled(self, enabled: bool, verify: bool=True):
         """
         Toggle smart home integrations.
         This is required to receive measurements in advertisements.
@@ -740,12 +810,29 @@ class Aranet4:
         header = 0x91
         val = struct.pack("<BB", header, 1 if enabled else 0)
         await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
+        if verify:
+            state = await self.get_sensor_state()
+            return enabled == state.isOpenForIntegration
+        return True
 
-    async def set_bluetooth_range(self, extended: bool):
+    async def set_bluetooth_range(self, extended: bool, verify: bool=True):
         """Set bluetooth range"""
-        header = 0x91
+        header = 0x92
         val = struct.pack("<BB", header, 1 if extended else 0)
         await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
+        if verify:
+            state = await self.get_sensor_state()
+            if extended:
+                return state.bluetoothRange == "extended"
+            else:
+                return state.bluetoothRange == "normal"
+
+    async def get_sensor_state(self):
+        """Return the count of how many datapoints are logged on device"""
+        raw_bytes = await self.device.read_gatt_char(self.AR4_READ_SENSOR_STATE)
+        state = SensorState()
+        state.decode(raw_bytes)
+        return state
 
 
 def _log_times(now, total, interval, ago):
@@ -814,10 +901,41 @@ async def _current_reading(address):
     readings.stored = await monitor.get_total_readings()
     return readings
 
+def _eval(val) -> bool:
+    falsy = ['0', 'false', 'disable', 'disabled', 'no', 'off', "none"]
+    if isinstance(val, str):
+        return val.lower() not in falsy
+    return bool(val)
+
+async def _set_settings(address, settings, verify: bool=True) -> dict:
+    """Change device settings. Returns changed count"""
+    monitor = Aranet4(address=address)
+    await monitor.connect()
+    status = {}
+
+    if 'interval' in settings:
+        intval = int(settings['interval'])
+        status['interval'] = await monitor.set_readings_interval(intval, verify)
+
+    if 'range' in settings:
+        extend = ['extend', 'extended', '1']
+        extend = settings['range'].lower() in extend
+        status['range'] = await monitor.set_bluetooth_range(extend, verify)
+
+    if 'integrations' in settings:
+        on = ['on', 'enable', 'enabled', '1']
+        on = settings['integrations'].lower() in on
+        status['integrations'] = await monitor.set_home_integration_enabled(on, verify)
+
+    return status
 
 def get_current_readings(mac_address: str) -> CurrentReading:
     """Get from the device the current measurements"""
     return asyncio.run(_current_reading(mac_address))
+
+def set_settings(mac_address: str, settings: dict, verify: bool=True) -> int:
+    """Get from the device the current measurements"""
+    return asyncio.run(_set_settings(mac_address, settings, verify))
 
 
 class Aranet4Scanner:
