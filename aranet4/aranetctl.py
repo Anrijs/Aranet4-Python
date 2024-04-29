@@ -79,6 +79,28 @@ def parse_args(ctl_args):
         action="store_false",
         help="Don't get co2 records",
     )
+    settings = parser.add_argument_group("Change device settings")
+    settings.add_argument(
+        "--set-interval",
+        dest="set_interval",
+        metavar="MINUTES",
+        type=int,
+        help="Change update interval"
+    )
+    settings.add_argument(
+        "--set-integrations",
+        dest="set_integrations",
+        type=str,
+        choices=["on", "off"],
+        help="Toggle Smart Home Integrations"
+    )
+    settings.add_argument(
+        "--set-range",
+        dest="set_btrange",
+        type=str,
+        choices=["normal", "extended"],
+        help="Change bluetooth range"
+    )
 
     return parser.parse_args(ctl_args)
 
@@ -237,10 +259,28 @@ def main(argv):
         if args.output:
             write_csv(args.output, records)
     else:
-        current = client.get_current_readings(args.device_mac)
-        print(current.toString())
-        if args.url:
-            post_data(args.url, current)
+        settings = {}
+
+        if args.set_interval:
+            settings['interval'] = args.set_interval
+
+        if args.set_integrations:
+            settings['integrations'] = args.set_integrations
+
+        if args.set_btrange:
+            settings['range'] = args.set_btrange
+
+        if settings:
+            result = client.set_settings(args.device_mac, settings, True)
+            for k in result:
+                val = settings[k]
+                ret = "SUCCESS" if result[k] else "FAILED"
+                print(f"Set {k} to \"{val}\": {ret}")
+        else:
+            current = client.get_current_readings(args.device_mac)
+            print(current.toString())
+            if args.url:
+                post_data(args.url, current)
 
 
 def entry_point():
