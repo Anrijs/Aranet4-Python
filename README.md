@@ -1,4 +1,7 @@
+
 # Aranet4 Python client
+Python library and command line interface for [Aranet4](https://aranet.com/products/aranet4/), [Aranet2](https://aranet.com/products/aranet2/) and [Aranet Radiation](https://aranet.com/products/aranetradiation/) sensors.
+
 ## Installation
 1. Install aranet4 and its dependencies:
 ```
@@ -12,25 +15,24 @@ pip3 install aranet4
 ## aranetctl usage
 ```text
 $ aranetctl -h
-usage: aranetctl [-h] [-u URL] [-r] [-s DATE] [-e DATE] [-o FILE] [-w] [-l COUNT]
-                 [--xt] [--xh] [--xp] [--xc]
-                 device_mac
+usage: aranetctl.py [-h] [--scan] [-u URL] [-r] [-s DATE] [-e DATE] [-o FILE] [-w] [-l COUNT] [--xt] [--xh] [--xp] [--xc] [--set-interval MINUTES]
+                    [--set-integrations {on,off}] [--set-range {normal,extended}]
+                    [device_mac]
 
 positional arguments:
   device_mac            Aranet4 Bluetooth Address
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  -r, --records         Fetch historical log records
   --scan                Scan Aranet4 devices
+  -r, --records         Fetch historical log records
 
 Options for current reading:
   -u URL, --url URL     Remote url for current value push
 
 Filter History Log Records:
   -s DATE, --start DATE
-                        Records range start (UTC time, example:
-                        2019-09-29T14:00:00
+                        Records range start (UTC time, example: 2019-09-29T14:00:00
   -e DATE, --end DATE   Records range end (UTC time, example: 2019-09-30T14:00:00
   -o FILE, --output FILE
                         Save records to a file
@@ -42,7 +44,34 @@ Filter History Log Records:
   --xp                  Don't get pressure records
   --xc                  Don't get co2 records
 
+Change device settings:
+  --set-interval MINUTES
+                        Change update interval
+  --set-integrations {on,off}
+                        Toggle Smart Home Integrations
+  --set-range {normal,extended}
+                        Change bluetooth range
 ```
+### Scan devices
+Usage: `aranetctl --scan`
+
+Output:
+```
+=======================================
+  Name:     Aranet4 00001
+  Address:  AA:BB:CC:DD:EE:FF
+  RSSI:     -83 dBm
+---------------------------------------
+  CO2:            484 ppm
+  Temperature:    20.9 °C
+  Humidity:       43 %
+  Pressure:       1024.8 hPa
+  Battery:        3 %
+  Status Display: GREEN
+  Age:            9/60
+```
+
+**Note:** To receive current measurements, Smart Home Integrations must be enabled and firmware version must be v1.2.0 or newer.
 
 ### Current Readings Example
 Usage: `aranetctl XX:XX:XX:XX:XX:XX`
@@ -115,32 +144,6 @@ print("Temperature:", current.temperature)
 print("Humidity:", current.humidity)
 print("Pressure:", current.pressure)
 ```
-
-### Scanner Example
-Usage: `aranetctl --scan`
-
-Output:
-```
-=======================================
-  Name:     Aranet4 00000
-  Address:  XX:XX:XX:XX:XX:XX
-  RSSI:     -85 dBm
---------------------------------------
-  CO2:           662 pm
-  Temperature:   21.9 °C
-  Humidity:      48 %
-  Pressure:      1019.2 hPa
-  Battery:       34 %
-  Status disp.:  GREEN
-
-=======================================
-  Name:     Aranet4 00001
-  Address:  XX:XX:XX:XX:XX:XX
-  RSSI:     -91 dBm
-
-```
-
-**Note:** To receive current measurements, Smart Home Integrations must be enabled and firmware version must be v1.2.0 or newer.
 
 ### Logged Readings Example
 
