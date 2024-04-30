@@ -489,7 +489,7 @@ class SensorState:
         else:
             self.type = AranetType.UNKNOWN
 
-        self.buzzerSetting = self.cond(c[0], self.cond(c[1], "each", "off"), "off")
+        self.buzzerSetting = self.cond(c[0], self.cond(c[1], "each", "once"), "off")
         self.calibrationState = self.cond(u, self.parseCalibrationState(t[1]), "none")
         self.calibrationProgress = self.cond(u, t[3], 0)
         self.warningPreset = self.cond(n, self.cond(t[3] == 1, "ISO", "custom"), "none")
