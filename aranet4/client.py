@@ -494,7 +494,7 @@ class SensorState:
         self.calibrationProgress = self.cond(u, t[3], 0)
         self.warningPreset = self.cond(n, self.cond(t[3] == 1, "ISO", "custom"), "none")
         self.isLoRaEnabled = self.cond(c[4], True, False)
-        self.temperatureUnit = self.cond(l, "none", self.cond(c[5], "C", "D"))
+        self.temperatureUnit = self.cond(l, "none", self.cond(c[5], "C", "F"))
         self.isPulseBeepOn = self.cond(l, _eval(c[5]), False)
         self.isUsingCustomThreshold = l and c[6]
         self.isAutomaticCalibrationEnabled = u and c[7]
