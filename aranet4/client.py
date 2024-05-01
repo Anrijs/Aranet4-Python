@@ -377,9 +377,12 @@ class Aranet4Advertisement:
                     # invalid manufacturer data
                     return
 
-                cond_name = device.name and "Aranet4" in device.name
-                cond_len  = not device.name and len(raw_bytes) in [7,22]
-                if cond_name or cond_len:
+                # Passive scan may return result with no name.
+                valid_name = device.name and device.name.startswith(("Aranet4", "Aranet2", "Aranet\u2622"))
+                cond_name = valid_name and device.name.startswith("Aranet4")
+                cond_len = not valid_name and len(raw_bytes) in [7,22]
+
+                if cond_name or cond_len: # Should be Aranet4
                     raw_bytes.insert(0,0)
 
                 # Basic info
