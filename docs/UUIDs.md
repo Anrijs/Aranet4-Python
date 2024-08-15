@@ -78,6 +78,37 @@ Service UUID before v1.2.0: `f0cd1400-95da-4f4b-9ac8-aa55d312af0c`
 | YY:YY       | Age (seconds ago)               | u8    | not required |
 | ZZ          | Counter                         | u8    | not required |
 
+### AranetRn readings (GATT)
+| Parameter | Name                            | Type  | Maths        |
+|-----------|---------------------------------|-------|--------------|
+| NN:NN:NN:NN:NN:NN | _Unknown_               |       |              |
+| OO        | Battery                         | u8    | not required |
+| PP:PP     | Temperature                     | uLE16 | /20          |
+| QQ:QQ     | Pressure                        | uLE16 | /10          |
+| RR:RR     | Humidity                        | uLE16 | /10          |
+| SS:SS:SS:SS | Radon Concentration           | uLE32 | not required |
+| TT        | Status                          | u8    |              |
+| VV:VV:VV:VV:VV:VV:VV:VV | Average 1         | uLE64 |              |
+| WW:WW:WW:WW:WW:WW:WW:WW | Average 2         | uLE64 |              |
+| XX:XX:XX:XX:XX:XX:XX:XX | Average 3         | uLE64 |              |
+| YY:YY:YY:YY | Initial progress              | uLE64 |              |
+| ZZ        | Display Type                    | u8    |              |
+
+### AranetRn readings (Advertisement)
+| Parameter | Name                            | Type  | Maths        |
+|-----------|---------------------------------|-------|--------------|
+| header    | Advertisement data header       |       | not required |
+| QQ:QQ     | Radon Concentration             | uLE16 | not required |
+| RR:RR     | Temperature                     | uLE16 | /20          |
+| SS:SS     | Pressure                        | uLE16 | /10          |
+| TT:TT     | Humidity                        | uLE16 | /10          |
+| UU        | _Unknown_                       | u8    | not required |
+| VV        | Battery                         | u8    | not required |
+| WW        | Status Flags                    | u8    | not required |
+| XX:XX     | Interval in seconds             | u8    | not required |
+| YY:YY     | Age (seconds ago)               | uLE16 | not required |
+| ZZ        | Counter                         | u8    | not required |
+
 ## Generic info
 | Service UUID                         | Characteristic UUID                  | Name              | Type   |
 |--------------------------------------|--------------------------------------|-------------------|--------|

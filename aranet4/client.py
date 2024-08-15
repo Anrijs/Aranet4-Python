@@ -28,6 +28,7 @@ class Param(IntEnum):
     RADIATION_DOSE = 7
     RADIATION_DOSE_RATE = 8
     RADIATION_DOSE_INTEGRAL = 9
+    RADON_CONCENTRATION = 10
 
 class Status(IntEnum):
     """Enum for the different status colors"""
@@ -43,6 +44,7 @@ class AranetType(IntEnum):
     ARANET4 = 0
     ARANET2 = 1
     ARANET_RADIATION = 2
+    ARANET_RADON = 3
     UNKNOWN = 255
 
 @dataclass
@@ -109,6 +111,12 @@ class CurrentReading:
     radiation_total: float = -1
     radiation_duration: int = -1
 
+    # Aranet Radon
+    radon_concentration: int = -1
+    radon_concentration_avg_24h: int = -1
+    radon_concentration_avg_7d:  int = -1
+    radon_concentration_avg_30d: int = -1
+
     battery: int = -1
     status: int = -1
     status_t: int = -1
@@ -159,6 +167,15 @@ class CurrentReading:
             ret += f"  Dose total:     {self.radiation_total/1000000:.04f} mSv/{dose_duration}\n"
             ret += f"  Battery:        {self.battery} %\n"
             ret += f"  Age:            {self.ago}/{self.interval}\n"
+        elif self.type == AranetType.ARANET_RADON:
+            ret += f"  Radon Conc.:    {self.radon_concentration} Bq/m3\n"
+            ret += f"  Temperature:    {self.temperature:.01f} \u00b0C\n"
+            ret += f"  Humidity:       {self.humidity} %\n"
+            ret += f"  Pressure:       {self.pressure:.01f} hPa\n"
+            ret += f"  Battery:        {self.battery} %\n"
+            #ret += f"  Status Display: {self.status.name}\n"
+            ret += f"  Age:            {self.ago}/{self.interval}\n"
+
         else:
             ret += f"  Unknown device type\n"
 
@@ -195,6 +212,8 @@ class CurrentReading:
             self._decode_aranet2(value, gatt)
         elif type == AranetType.ARANET_RADIATION:
             self._decode_aranetR(value, gatt)
+        elif type == AranetType.ARANET_RADON:
+            self._decode_aranetRn(value, gatt)
 
     def _decode_aranet4(self, value: tuple, gatt=False):
         """Process Aranet4 data - CO2, Temperature, Humidity, Pressure"""
@@ -249,6 +268,45 @@ class CurrentReading:
             self.ago = value[7]
             self.counter = value[8]
 
+    def _decode_aranetRn(self, value: tuple, gatt=False):
+        """Process Aranet Radon data"""
+        # order from gatt and advertisements are different
+        if gatt:
+            self.battery = value[3]
+            self.temperature = self._set(Param.TEMPERATURE, value[4])
+            self.pressure = self._set(Param.PRESSURE, value[5])
+            self.humidity = self._set(Param.HUMIDITY2, value[6])
+            self.radon_concentration = self._set(Param.RADON_CONCENTRATION, value[7])
+            self.radon_concentration_avg_24h = self._parse_avg_radon(value[9], value[10])["value"]
+            self.radon_concentration_avg_7d  = self._parse_avg_radon(value[11], value[12])["value"]
+            self.radon_concentration_avg_30d = self._parse_avg_radon(value[13], value[14])["value"]
+        else:
+            self.radon_concentration = self._set(Param.RADON_CONCENTRATION, value[0])
+            self.temperature = self._set(Param.TEMPERATURE, value[1])
+            self.pressure = self._set(Param.PRESSURE, value[2])
+            self.humidity = self._set(Param.HUMIDITY2, value[3])
+            self.battery = value[5]
+            # self.status = value[6] # TODO: what format?
+            self.interval = value[7]
+            self.ago = value[8]
+            self.counter = value[9]
+
+    @staticmethod
+    def _parse_avg_radon(time, average) -> dict:
+        inProgress = average >= 0xff000000
+        progress = -1
+        value = average
+
+        if inProgress:
+            progress = average & 0x00FFFFFF
+            value = -1
+
+        return {
+            "time": time,
+            "value": value,
+            "progress": progress
+    }
+
     @staticmethod
     def _decode_status_flags(status):
         status_t = Status.GREEN
@@ -299,6 +357,12 @@ class CurrentReading:
         elif param == Param.RADIATION_DOSE_INTEGRAL:
             invalid_reading_flag = value >> 63 == 1
             multiplier = 1 # nSv
+        elif param == Param.RADON_CONCENTRATION:
+            # 0x1f00 general error
+            # 0x1f01 no data
+            # 0x1f02 Hi humidity in sensor chamber
+            invalid_reading_flag = value >= 0x1f00
+            multiplier = 1 # Bq/m3
 
         if invalid_reading_flag:
             return -1
@@ -378,7 +442,7 @@ class Aranet4Advertisement:
                     return
 
                 # Passive scan may return result with no name.
-                valid_name = device.name and device.name.startswith(("Aranet4", "Aranet2", "Aranet\u2622"))
+                valid_name = device.name and device.name.startswith(("Aranet4", "Aranet2", "Aranet\u2622", "AranetRn"))
                 cond_name = valid_name and device.name.startswith("Aranet4")
                 cond_len = not valid_name and len(raw_bytes) in [7,22]
 
@@ -406,6 +470,9 @@ class Aranet4Advertisement:
                 elif aranetv == 2: # Aranet Radiation
                     value_fmt = "<xxxxxxIIHBBBHHB"
                     aranetv = AranetType.ARANET_RADIATION
+                elif aranetv == 3: # Aranet Radon
+                    value_fmt = "<xxxxxxxxHHHHBBBHHB"
+                    aranetv = AranetType.ARANET_RADON
                 else:
                     value_fmt = ""
                     aranetv = None
@@ -432,6 +499,7 @@ class RecordItem:
     rad_dose: float
     rad_dose_rate: float
     rad_dose_total: float
+    radon_concentration: int
 
 
 @dataclass
@@ -447,6 +515,7 @@ class Filter:
     incl_rad_dose: bool
     incl_rad_dose_rate: bool
     incl_rad_dose_total: bool
+    incl_radon_concentration: bool
 
 
 @dataclass
@@ -472,37 +541,53 @@ class SensorState:
     isUsingCustomThreshold: bool = False
     isAutomaticCalibrationEnabled: bool = False
     radiationDisplayUnits: str = "unknwon"
+    radonDisplayUnits: str = "unknwon"
     isBuzzerAvailable: bool = False
     bluetoothRange: str = "unknown"
     isOpenForIntegration: bool = False
 
     def decode(self, t):
-        n = t[0] == 242 # Aranet2
-        u = t[0] == 241 # Aranet4
-        l = t[0] == 244 # Aranet Radiation
+        isAranet2 = t[0] == 0xF2 # Aranet2
+        isAranet4 = t[0] == 0xF1 # Aranet4
+        isNucleo  = t[0] == 0xF4 # Aranet Radiation
+        isRadon   = t[0] == 0xF3 # Aranet Radon
         c = format(ord(chr(t[1])), '08b')[::-1]
         o = format(ord(chr(t[2])), '08b')[::-1]
 
-        if u:
+        if isAranet4:
             self.type = AranetType.ARANET4
-        elif n:
+        elif isAranet2:
             self.type = AranetType.ARANET2
-        elif l:
+        elif isNucleo:
             self.type = AranetType.ARANET_RADIATION
+        elif isRadon:
+            self.type = AranetType.ARANET_RADON
         else:
             self.type = AranetType.UNKNOWN
 
-        self.buzzerSetting = self.cond(c[0], self.cond(c[1], "each", "once"), "off")
-        self.calibrationState = self.cond(u, self.parseCalibrationState(t[1]), "none")
-        self.calibrationProgress = self.cond(u, t[3], 0)
-        self.warningPreset = self.cond(n, self.cond(t[3] == 1, "ISO", "custom"), "none")
+        self.buzzerSetting = (
+            "none" if isAranet2 else
+            "off" if not _eval(c[0]) else
+            "on" if isRadon else
+            "once" if not _eval(c[1]) else
+            "each"
+        )
+
+        self.calibrationState = self.cond(isAranet4, self.parseCalibrationState(t[1]), "none")
+        self.calibrationProgress = self.cond(isAranet4, t[3], 0)
+        self.warningPreset = self.cond(isAranet2, self.cond(t[3] == 1, "ISO", "custom"), "none")
         self.isLoRaEnabled = self.cond(c[4], True, False)
-        self.temperatureUnit = self.cond(l, "none", self.cond(c[5], "C", "F"))
-        self.isPulseBeepOn = self.cond(l, _eval(c[5]), False)
-        self.isUsingCustomThreshold = l and c[6]
-        self.isAutomaticCalibrationEnabled = u and c[7]
-        self.radiationDisplayUnits = self.cond(l, self.cond(c[7], "Sv", "rem"), "none")
-        self.isBuzzerAvailable = self.cond(u, _eval(o[0]), l)
+        self.temperatureUnit = self.cond(isNucleo, "none", self.cond(c[5], "C", "F"))
+        self.isPulseBeepOn = self.cond(isNucleo, _eval(c[5]), False)
+        self.isUsingCustomThreshold = c[6] == (isNucleo or isRadon)
+        self.isAutomaticCalibrationEnabled = isAranet4 and c[7]
+        self.radiationDisplayUnits = self.cond(isNucleo, self.cond(c[7], "Sv", "rem"), "none")
+        self.radonDisplayUnits = (
+            "none" if not isRadon else
+            "Bq/m³" if _eval(c[7]) else
+            "pCi/L"
+        )
+        self.isBuzzerAvailable = self.cond(isNucleo or isRadon, True, isAranet4 and _eval(o[0]))
         self.bluetoothRange = self.cond(o[1], "extended", "normal")
         self.isOpenForIntegration = _eval(o[7])
 
@@ -613,13 +698,21 @@ class Aranet4:
             uuid = self.AR2_READ_CURRENT_READINGS
             raw_bytes = await self.device.read_gatt_char(uuid)
 
-            # TODO: Can we use byte ar position 0 to detect type?
-            if len(raw_bytes) >= 28:
+            isRadon = raw_bytes[0] == 3
+            isNucleo = raw_bytes[0] == 4
+            isAranet2 = raw_bytes[0] == 2
+
+            if isRadon and len(raw_bytes) >= 47:
+                # radon
+                value_fmt = "<HHHBHHHHBIIIIIIIB"
+                value = struct.unpack(value_fmt, raw_bytes[0:47])
+                readings.decode(value, AranetType.ARANET_RADON, True)
+            elif isNucleo and len(raw_bytes) >= 28:
                 # radiation
                 value_fmt = "<HHHBIQQB"
                 value = struct.unpack(value_fmt, raw_bytes[0:28])
                 readings.decode(value, AranetType.ARANET_RADIATION, True)
-            else:
+            elif isAranet2:
                 value_fmt = "<HHHBHHB"
                 value = struct.unpack(value_fmt, raw_bytes)
                 readings.decode(value, AranetType.ARANET2, True)
@@ -742,6 +835,8 @@ class Aranet4:
                 pattern = "<Hx"
             elif param.value == Param.RADIATION_DOSE_INTEGRAL:
                 pattern = "<Q"
+            elif param.value == Param.RADON_CONCENTRATION:
+                pattern = "<I"
             else:
                 pattern = "<H"
 
@@ -1026,6 +1121,13 @@ async def _all_records(address, entry_filter, remove_empty):
         entry_filter["rad_dose"] = entry_filter.get("rad_dose", True)
         entry_filter["rad_dose_rate"] = entry_filter.get("rad_dose_rate", True)
         entry_filter["rad_dose_total"] = entry_filter.get("rad_dose_total", True)
+    elif dev_name.startswith("AranetRn"):
+        entry_filter["co2"] = False
+        entry_filter["radon_concentration"] = entry_filter.get("radon_concentration", True)
+        entry_filter["pres"] = entry_filter.get("pres", True)
+        entry_filter["temp"] = entry_filter.get("temp", True)
+        if entry_filter.get("humi", False):
+            entry_filter["humi"] = 2 #v2 humidity
 
     log_size = await monitor.get_total_readings()
     log_points = _log_times(now, log_size, interval, last_log)
@@ -1040,6 +1142,7 @@ async def _all_records(address, entry_filter, remove_empty):
         entry_filter.get("rad_dose", False),
         entry_filter.get("rad_dose_rate", False),
         entry_filter.get("rad_dose_total", False),
+        entry_filter.get("radon_concentration", False),
     )
 
     if begin < 0 or end < 0:
@@ -1093,12 +1196,30 @@ async def _all_records(address, entry_filter, remove_empty):
         )
     else:
         rad_dose_total_val = _empty_reading(log_size)
+    if rec_filter.incl_radon_concentration:
+        radon_concentration_val = await monitor.get_records(
+            Param.RADON_CONCENTRATION, log_size=log_size, start=begin, end=end
+        )
+    else:
+        radon_concentration_val = _empty_reading(log_size)
 ####
     # Store returned data in dataclass
-    data = zip(log_points, co2_val, temperature_val, pressure_val, humidity_val, rad_dose_val, rad_dose_rate_val, rad_dose_total_val)
+    data = zip(
+        log_points,
+        co2_val,
+        temperature_val,
+        pressure_val,
+        humidity_val,
+        rad_dose_val,
+        rad_dose_rate_val,
+        rad_dose_total_val,
+        radon_concentration_val
+    )
+
     record = Record(dev_name, dev_version, log_size, rec_filter)
-    for date, co2, temp, pres, hum, rad, rad_rate, rad_integral in data:
-        record.value.append(RecordItem(date, temp, hum, pres, co2, rad, rad_rate, rad_integral))
+
+    for date, co2, temp, pres, hum, rad, rad_rate, rad_integral, radon in data:
+        record.value.append(RecordItem(date, temp, hum, pres, co2, rad, rad_rate, rad_integral, radon))
     if (remove_empty):
         record.value = record.value[begin-1:end+1]
     return record

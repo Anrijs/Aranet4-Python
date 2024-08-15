@@ -55,6 +55,12 @@ TEST_DATA_ARANET_RADIATION = {
     "manufacturer_data_no_integrations": {1794: b"\x02\x01&\x04\x01\x00\xd03\x00\x00l`\x06\x00\x82\x00\x00c\x00,\x01X\x00r"},
 }
 
+TEST_DATA_ARANET_RADON = {
+    "name": "AranetRn 298C9",
+    "uuid": "f0cd1400-95da-4f4b-9ac8-aa55d312af0c",
+    "manufacturer_data": {1794: b"\x03!\x04\x06\x01\x00\x00\x00\x07\x00\xfe\x01\xc9\'\xce\x01\x00d\x01X\x02\xf6\x01\x08"},
+}
+
 
 class DataManipulation(unittest.TestCase):
     # ---------------------------------------------
@@ -103,6 +109,20 @@ class DataManipulation(unittest.TestCase):
         self.assertEqual(88, ad.readings.ago)
         self.assertEqual(300, ad.readings.interval)
 
+    def _test_aranet_radon(self, data):
+        ad = Aranet4Advertisement(data["device"], data["ad_data"])
+
+        self.assertTrue(ad.manufacturer_data.integrations)
+        self.assertEqual("v1.6.4", str(ad.manufacturer_data.version))
+
+        self.assertEqual(AranetType.ARANET_RADON, ad.readings.type)
+        self.assertEqual(25.5, ad.readings.temperature)
+        self.assertEqual(46.2, ad.readings.humidity)
+        self.assertEqual(1018.5, ad.readings.pressure)
+        self.assertEqual(7, ad.readings.radon_concentration)
+        self.assertEqual(100, ad.readings.battery)
+        self.assertEqual(502, ad.readings.ago)
+        self.assertEqual(600, ad.readings.interval)
     # ---------------------------------------------
     #  Test variations
     # ---------------------------------------------
@@ -222,6 +242,21 @@ class DataManipulation(unittest.TestCase):
             srcdata["manufacturer_data"],
         ))
 
+    def test_aranet_radon(self):
+        srcdata = TEST_DATA_ARANET_RADON
+        self._test_aranet_radon(fake_ad_data(
+            srcdata["name"],
+            srcdata["uuid"],
+            srcdata["manufacturer_data"],
+        ))
+
+    def test_aranet_radon_noname(self):
+        srcdata = TEST_DATA_ARANET_RADON
+        self._test_aranet_radon(fake_ad_data(
+            None,
+            srcdata["uuid"],
+            srcdata["manufacturer_data"],
+        ))
 
 if __name__ == "__main__":
     unittest.main()

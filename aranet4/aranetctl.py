@@ -113,7 +113,7 @@ def print_records(records):
     if records.filter.incl_temperature:
         char_repeat += 7
     if records.filter.incl_humidity:
-        char_repeat += 6
+        char_repeat += 8
     if records.filter.incl_pressure:
         char_repeat += 11
     if records.filter.incl_rad_dose_rate:
@@ -122,6 +122,8 @@ def print_records(records):
         char_repeat += 11
     if records.filter.incl_rad_dose_total:
         char_repeat += 12
+    if records.filter.incl_radon_concentration:
+        char_repeat += 8
     print("-" * char_repeat)
     print(f"{'Device Name':<15}: {records.name:>20}")
     print(f"{'Device Version':<15}: {records.version:>20}")
@@ -141,6 +143,8 @@ def print_records(records):
         print(" rad_rate |", end="")
     if records.filter.incl_rad_dose_total:
         print(" rad_total |", end="")
+    if records.filter.incl_radon_concentration:
+        print(f" {'radon':^5} |", end=""),
     print("")
     print("-" * char_repeat)
 
@@ -151,7 +155,7 @@ def print_records(records):
         if records.filter.incl_temperature:
             print(f" {line.temperature:>4.1f} |", end="")
         if records.filter.incl_humidity:
-            print(f" {line.humidity:>3.1f} |", end="")
+            print(f" {line.humidity:>5.1f} |", end="")
         if records.filter.incl_pressure:
             print(f" {line.pressure:>8.1f} |", end="")
         if records.filter.incl_rad_dose:
@@ -160,6 +164,8 @@ def print_records(records):
             print(f" {line.rad_dose_rate/1000:>8.3f} |", end="")
         if records.filter.incl_rad_dose_total:
             print(f" {line.rad_dose_total/1000000:>9.4f} |", end="")
+        if records.filter.incl_radon_concentration:
+            print(f" {line.radon_concentration:>5d} |", end="")
         print("")
     print("-" * char_repeat)
 
@@ -193,6 +199,8 @@ def write_csv(filename, log_data):
             fieldnames.append("rad_dose_rate")
         if log_data.filter.incl_rad_dose_total:
             fieldnames.append("rad_dose_total")
+        if log_data.filter.incl_radon_concentration:
+            fieldnames.append("radon_concentration")
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction="ignore")
 
         writer.writeheader()
