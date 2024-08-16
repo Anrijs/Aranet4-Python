@@ -173,7 +173,7 @@ class CurrentReading:
             ret += f"  Humidity:       {self.humidity} %\n"
             ret += f"  Pressure:       {self.pressure:.01f} hPa\n"
             ret += f"  Battery:        {self.battery} %\n"
-            #ret += f"  Status Display: {self.status.name}\n"
+            ret += f"  Status Display: {self.status.name}\n"
             ret += f"  Age:            {self.ago}/{self.interval}\n"
 
         else:
@@ -277,6 +277,7 @@ class CurrentReading:
             self.pressure = self._set(Param.PRESSURE, value[5])
             self.humidity = self._set(Param.HUMIDITY2, value[6])
             self.radon_concentration = self._set(Param.RADON_CONCENTRATION, value[7])
+            self.status = Status(value[8])
             self.radon_concentration_avg_24h = self._parse_avg_radon(value[9], value[10])["value"]
             self.radon_concentration_avg_7d  = self._parse_avg_radon(value[11], value[12])["value"]
             self.radon_concentration_avg_30d = self._parse_avg_radon(value[13], value[14])["value"]
@@ -286,7 +287,7 @@ class CurrentReading:
             self.pressure = self._set(Param.PRESSURE, value[2])
             self.humidity = self._set(Param.HUMIDITY2, value[3])
             self.battery = value[5]
-            # self.status = value[6] # TODO: what format?
+            self.status = self.status = Status(value[6])
             self.interval = value[7]
             self.ago = value[8]
             self.counter = value[9]
@@ -690,11 +691,11 @@ class Aranet4:
         """Extract current readings from remote device"""
         readings = CurrentReading()
 
-        aranet2_char = self.device.services.get_characteristic(
+        new_aranet_char = self.device.services.get_characteristic(
             self.AR2_READ_CURRENT_READINGS
         )
 
-        if aranet2_char:
+        if new_aranet_char:
             uuid = self.AR2_READ_CURRENT_READINGS
             raw_bytes = await self.device.read_gatt_char(uuid)
 
@@ -704,7 +705,7 @@ class Aranet4:
 
             if isRadon and len(raw_bytes) >= 47:
                 # radon
-                value_fmt = "<HHHBHHHHBIIIIIIIB"
+                value_fmt = "<HHHBHHHIBIIIIIIIB"
                 value = struct.unpack(value_fmt, raw_bytes[0:47])
                 readings.decode(value, AranetType.ARANET_RADON, True)
             elif isNucleo and len(raw_bytes) >= 28:
