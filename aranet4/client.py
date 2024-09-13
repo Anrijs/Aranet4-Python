@@ -146,14 +146,14 @@ class CurrentReading:
             ret += f"  Pressure:       {self.pressure:.01f} hPa\n"
             ret += f"  Battery:        {self.battery} %\n"
             ret += f"  Status Display: {self.status.name}\n"
-            ret += f"  Age:            {self.ago}/{self.interval}\n"
+            ret += f"  Age:            {self.ago}/{self.interval} s\n"
         elif self.type == AranetType.ARANET2:
             ret += f"  Temperature:    {self.temperature:.01f} \u00b0C\n"
             ret += f"  Humidity:       {self.humidity} %\n"
             ret += f"  Battery:        {self.battery} %\n"
             ret += f"  Status Temp.:   {self.status_t.name}\n"
             ret += f"  Status Humid.:  {self.status_h.name}\n"
-            ret += f"  Age:            {self.ago}/{self.interval}\n"
+            ret += f"  Age:            {self.ago}/{self.interval} s\n"
         elif self.type == AranetType.ARANET_RADIATION:
             m = math.floor(self.radiation_duration / 60 % 60)
             h = math.floor(self.radiation_duration / 3600 % 24)
@@ -166,7 +166,7 @@ class CurrentReading:
             ret += f"  Dose rate:      {self.radiation_rate/1000:.02f} uSv/h\n"
             ret += f"  Dose total:     {self.radiation_total/1000000:.04f} mSv/{dose_duration}\n"
             ret += f"  Battery:        {self.battery} %\n"
-            ret += f"  Age:            {self.ago}/{self.interval}\n"
+            ret += f"  Age:            {self.ago}/{self.interval} s\n"
         elif self.type == AranetType.ARANET_RADON:
             ret += f"  Radon Conc.:    {self.radon_concentration} Bq/m3\n"
             ret += f"  Temperature:    {self.temperature:.01f} \u00b0C\n"
@@ -174,7 +174,7 @@ class CurrentReading:
             ret += f"  Pressure:       {self.pressure:.01f} hPa\n"
             ret += f"  Battery:        {self.battery} %\n"
             ret += f"  Status Display: {self.status.name}\n"
-            ret += f"  Age:            {self.ago}/{self.interval}\n"
+            ret += f"  Age:            {self.ago}/{self.interval} s\n"
 
         else:
             ret += f"  Unknown device type\n"
@@ -1072,7 +1072,7 @@ async def _find_nearby(detect_callback: callable, duration: int) -> List[BLEDevi
 def find_nearby(detect_callback: callable, duration: int = 5) -> List[BLEDevice]:
     """
     Scans for nearby Aranet4 devices.
-    Will call callback on every valid Aranet4 advertisement, including duplcates
+    Will call callback on every valid Aranet4 advertisement, including duplicates
     """
 
     return asyncio.run(_find_nearby(detect_callback, duration))
