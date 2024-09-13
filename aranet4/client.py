@@ -650,10 +650,10 @@ class Aranet4:
     AR4_READ_SENSOR_STATE = "f0cd1401-95da-4f4b-9ac8-aa55d312af0c"
 
 
-    # Read / Generic servce
+    # Read / Generic service
     GENERIC_READ_DEVICE_NAME = "00002a00-0000-1000-8000-00805f9b34fb"
 
-    # Read / Common servce
+    # Read / Common service
     COMMON_READ_MANUFACTURER_NAME = "00002a29-0000-1000-8000-00805f9b34fb"
     COMMON_READ_MODEL_NUMBER = "00002a24-0000-1000-8000-00805f9b34fb"
     COMMON_READ_SERIAL_NO = "00002a25-0000-1000-8000-00805f9b34fb"
