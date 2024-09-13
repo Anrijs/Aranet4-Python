@@ -537,12 +537,12 @@ class SensorState:
     calibrationProgress: int = 0
     warningPreset: str = "unknown"
     isLoRaEnabled: bool = False
-    temperatureUnit: str = "unknwonw"
+    temperatureUnit: str = "unknown"
     isPulseBeepOn: bool = False
     isUsingCustomThreshold: bool = False
     isAutomaticCalibrationEnabled: bool = False
-    radiationDisplayUnits: str = "unknwon"
-    radonDisplayUnits: str = "unknwon"
+    radiationDisplayUnits: str = "unknown"
+    radonDisplayUnits: str = "unknown"
     isBuzzerAvailable: bool = False
     bluetoothRange: str = "unknown"
     isOpenForIntegration: bool = False
@@ -641,7 +641,7 @@ class Aranet4:
     AR4_READ_CURRENT_READINGS_DET = "f0cd3001-95da-4f4b-9ac8-aa55d312af0c"
     AR2_READ_CURRENT_READINGS = "f0cd1504-95da-4f4b-9ac8-aa55d312af0c"
     AR2_READ_CURRENT_READINGS_A = "f0cd3003-95da-4f4b-9ac8-aa55d312af0c" # data is same as other
-    # aranet2 has different service uids. use rhose
+    # aranet2 has different service uids. use those
     AR4_READ_INTERVAL = "f0cd2002-95da-4f4b-9ac8-aa55d312af0c"
     AR4_READ_SECONDS_SINCE_UPDATE = "f0cd2004-95da-4f4b-9ac8-aa55d312af0c"
     AR4_READ_TOTAL_READINGS = "f0cd2001-95da-4f4b-9ac8-aa55d312af0c"
