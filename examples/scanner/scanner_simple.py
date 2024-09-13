@@ -22,7 +22,7 @@ def print_advertisement(advertisement):
         # print(f"  Calibration state: {mf_data.calibration_state.name}")
         # print(f"  DFU Active:        {mf_data.dfu_active:}")
 
-    print(f"  RSSI:              {advertisement.device.rssi} dBm")
+    print(f"  RSSI:              {advertisement.rssi} dBm")
 
     if advertisement.readings:
         readings = advertisement.readings
@@ -31,7 +31,7 @@ def print_advertisement(advertisement):
         print(f"  Temperature:   {readings.temperature:.01f} \u00b0C")
         print(f"  Humidity:      {readings.humidity} %")
         print(f"  Pressure:      {readings.pressure:.01f} hPa")
-        print(f"  Battery:       {readings.battery} &")
+        print(f"  Battery:       {readings.battery} %")
         print(f"  Status disp.:  {readings.status.name}")
         print(f"  Ago:           {readings.ago} s")
     print()
@@ -40,7 +40,7 @@ def print_advertisement(advertisement):
 def main(argv):
     # Scan for 10 seconds, then print results
     print("Scanning Aranet4 devices...")
-    aranet4.client.find_nearby(on_scan, 5)
+    aranet4.client.find_nearby(on_scan, 10)
     print(f"\nFound {len(scanned_devices)} devices:\n")
 
     for addr in scanned_devices:
