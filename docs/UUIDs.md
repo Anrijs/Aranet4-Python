@@ -10,7 +10,7 @@ Service UUID before v1.2.0: `f0cd1400-95da-4f4b-9ac8-aa55d312af0c`
 | `f0cd3001-95da-4f4b-9ac8-aa55d312af0c` | Current Readings + Interval + Ago | raw        | SS:SS:TT:TT:UU:UU:VV:WW:XX:YY:YY:ZZ:ZZ | See Aranet4 readings table       |
 | `f0cd1504-95da-4f4b-9ac8-aa55d312af0c` | Aranet2/Rad Current Readings      | raw        | See Aranet2/Rad readings table         | See Aranet2/Rad readings table   |
 | `f0cd2002-95da-4f4b-9ac8-aa55d312af0c` | Read Interval                     | u16LE      | XX:XX                                  | Read interval in seconds         |
-| `f0cd1502-95da-4f4b-9ac8-aa55d312af0c` | Sensor callibration data          | raw        | FF:FF:FF:FF:FF:FF:FF:FF                |                                  |
+| `f0cd1502-95da-4f4b-9ac8-aa55d312af0c` | Sensor calibration data           | raw        | FF:FF:FF:FF:FF:FF:FF:FF                |                                  |
 | `f0cd2004-95da-4f4b-9ac8-aa55d312af0c` | Seconds since update              | u16LE      | XX:XX                                  | Last reading time (seconds ago)  |
 | `f0cd2001-95da-4f4b-9ac8-aa55d312af0c` | Total readings                    | u16LE      | XX:XX                                  | XX:XX - Total readings in memory |
 
@@ -127,7 +127,7 @@ Service UUID: `f0cd1400-95da-4f4b-9ac8-aa55d312af0c`
 |----------------------------------------|--------------------------------|------|-------------------------|-----------------------------------------------------------------------------------------------|
 | `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` | Set Interval                   | raw  | 90:XX                   | XX - Time in minutes (01,02,05,0A)                                                            |
 | `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` | Toggle Smart Home integrations | raw  | 91:XX                   | XX - 0 = disabled, 1 = enabled                                                                |
-| `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` | Set Bluetooth range            | raw  | 92:XX                   | XX - 0 = standart, 1 = extended                                                               |
+| `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` | Set Bluetooth range            | raw  | 92:XX                   | XX - 0 = standard, 1 = extended                                                               |
 | `f0cd1402-95da-4f4b-9ac8-aa55d312af0c` | Set history parameter          | raw  | 82:XX:00:00:YY:YY:ZZ:ZZ | XX - Property (1,2,3,4), YY:YY - First index (uLE16, starts with 1),ZZ:ZZ - Max index (u16LE) |
 
 
