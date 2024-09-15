@@ -1,0 +1,14 @@
+# General Windows metadata.
+Thumbs.db
+
+# Visual Studio metadata.
+/.vs/
+
+# Built releases (from python -m build)
+/dist/
+
+# Python pre-compiled cache.
+/**/__pycache__/
+
+# Python packaging metadata.
+/*.egg-info/

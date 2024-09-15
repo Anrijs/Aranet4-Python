@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{c788fbe9-9b2f-4c92-91e9-6d82c89da523}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>aranet4\aranetctl.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId />
+    <TestFramework>Pytest</TestFramework>
+    <CommandLineArguments>--help</CommandLineArguments>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="pytest.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="aranet4\aranetctl.py" />
+    <Compile Include="aranet4\client.py" />
+    <Compile Include="aranet4\__init__.py" />
+    <Compile Include="examples\history\export_csv.py" />
+    <Compile Include="examples\influx\import.py" />
+    <Compile Include="examples\influx\influx.py" />
+    <Compile Include="examples\mqtt\publish.py" />
+    <Compile Include="examples\scanner\scanner_advanced.py" />
+    <Compile Include="examples\scanner\scanner_simple.py" />
+    <Compile Include="setup.py" />
+    <Compile Include="tests\test_advertisements.py" />
+    <Compile Include="tests\test_csv.py" />
+    <Compile Include="tests\test_values.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="aranet4" />
+    <Folder Include="examples\" />
+    <Folder Include="examples\history" />
+    <Folder Include="examples\influx" />
+    <Folder Include="examples\mqtt" />
+    <Folder Include="examples\scanner" />
+    <Folder Include="tests" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>
