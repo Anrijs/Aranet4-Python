@@ -12,9 +12,9 @@ from aranet4 import client
 
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
-    parser.add_argument("device_mac", nargs='?', help="Aranet4 Bluetooth Address")
+    parser.add_argument("device_mac", nargs='?', help="Aranet Bluetooth Address")
     parser.add_argument(
-        "--scan", action="store_true", help="Scan Aranet4 devices"
+        "--scan", action="store_true", help="Scan for Aranet devices"
     )
     current = parser.add_argument_group("Options for current reading")
     current.add_argument(

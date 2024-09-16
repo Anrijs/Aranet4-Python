@@ -1,16 +1,16 @@
 
 # Aranet4 Python client
-Python library and command line interface for [Aranet4](https://aranet.com/products/aranet4/), [Aranet2](https://aranet.com/products/aranet2/), [Aranet Radiation](https://aranet.com/products/aranetradiation/) and [Aranet Radon Plus](https://aranet.com/en/home/products/aranet-radon-sensor) sensors.
+Python library and command line interface for [Aranet4](https://aranet.com/products/aranet4-home), [Aranet2](https://aranet.com/products/aranet2-home), [Aranet Radiation](https://aranet.com/products/aranet-radiation-sensor) and [Aranet Radon Plus](https://aranet.com/products/aranet-radon-sensor) sensors.
 
 ## Installation
 1. Install aranet4 and its dependencies:
 ```
 pip3 install aranet4
 ```
-2. Pair Aranet4 device
-3. Run `aranetctl` or use as library
+2. Pair Aranet device
+3. Run `aranetctl` or use as a library
 
-**Note:** Smart Home Integrations must be enabled in Aranet4 mobile app for full support.
+**Note:** "Smart Home integrations" must be enabled in the [Aranet Home](https://aranet.com/aranet-home-app) mobile application for full support.
 
 ## aranetctl usage
 ```text
@@ -20,11 +20,11 @@ usage: aranetctl.py [-h] [--scan] [-u URL] [-r] [-s DATE] [-e DATE] [-o FILE] [-
                     [device_mac]
 
 positional arguments:
-  device_mac            Aranet4 Bluetooth Address
+  device_mac            Aranet Bluetooth Address
 
 options:
   -h, --help            show this help message and exit
-  --scan                Scan Aranet4 devices
+  --scan                Scan for Aranet devices
   -r, --records         Fetch historical log records
 
 Options for current reading:
@@ -71,7 +71,7 @@ Output:
   Age:            9/60
 ```
 
-**Note:** To receive current measurements, Smart Home Integrations must be enabled and firmware version must be v1.2.0 or newer.
+**Note:** To receive current measurements directly from the Bluetooth advertisement data, "Smart Home integrations" must be enabled and device firmware version must be v1.2.0 or newer.
 
 ### Current Readings Example
 Usage: `aranetctl XX:XX:XX:XX:XX:XX`
