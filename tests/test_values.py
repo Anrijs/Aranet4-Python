@@ -33,7 +33,7 @@ device_readings = """=======================================
   Pressure:       1016.5 hPa
   Battery:        93 %
   Status Display: GREEN
-  Age:            44/300
+  Age:            44/300 s
 
 """
 
