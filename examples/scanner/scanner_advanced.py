@@ -24,7 +24,7 @@ def on_scan(advertisement):
         # print(f"  Calibration state: {mf_data.calibration_state.name}")
         # print(f"  DFU Active:        {mf_data.dfu_active:}")
 
-    print(f"  RSSI:              {advertisement.device.rssi} dBm")
+    print(f"  RSSI:              {advertisement.rssi} dBm")
 
     if advertisement.readings:
         print("--------------------------------------")
@@ -32,7 +32,7 @@ def on_scan(advertisement):
         print(f"  Temperature:   {advertisement.readings.temperature:.01f} \u00b0C")
         print(f"  Humidity:      {advertisement.readings.humidity} %")
         print(f"  Pressure:      {advertisement.readings.pressure:.01f} hPa")
-        print(f"  Battery:       {advertisement.readings.battery} &")
+        print(f"  Battery:       {advertisement.readings.battery} %")
         print(f"  Status disp.:  {advertisement.readings.status.name}")
         print(f"  Ago:           {advertisement.readings.ago} s")
     print()
