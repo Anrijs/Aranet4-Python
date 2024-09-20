@@ -16,7 +16,7 @@ result = client.CurrentReading(
     pressure=1016.5,
     co2=933,
     battery=93,
-    status=client.Status.GREEN,
+    status=client.Color.GREEN,
     interval=300,
     ago=44,
     stored=2016
@@ -78,7 +78,7 @@ class DataManipulation(unittest.TestCase):
     def test_parse_args3(self):
         expected = base_args.copy()
         expected["records"] = True
-        expected["l"] = 30
+        expected["last"] = 30
         args = aranetctl.parse_args("11:22:33:44:55:66 -r -l 30".split())
         self.assertDictEqual(expected, args.__dict__)
 
@@ -92,7 +92,7 @@ class DataManipulation(unittest.TestCase):
         )
         self.assertDictEqual(expected, args.__dict__)
 
-    def test_parse_args3(self):
+    def test_parse_args5(self):
         expected = base_args.copy()
         expected["records"] = True
         expected["temp"] = False

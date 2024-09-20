@@ -1,7 +1,7 @@
-import sys
-from aranet4 import Aranet4Scanner
 import asyncio
-import time
+import sys
+
+from aranet4 import Aranet4Scanner
 
 """
     Custom scanner setup example.
@@ -40,11 +40,10 @@ def on_scan(advertisement):
 async def main(argv):
     scanner = Aranet4Scanner(on_scan)
     await scanner.start()
-    while (True): # Run forever
+    while True: # Run forever
         await asyncio.sleep(1)
     await scanner.stop()
 
-    
 if __name__== "__main__":
     try:
         asyncio.run(main(sys.argv[1:]))

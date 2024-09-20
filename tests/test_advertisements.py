@@ -1,14 +1,10 @@
-import datetime
-import io
 import unittest
-from unittest import mock
-
-from aranet4 import client
-from aranet4.client import Aranet4Advertisement
-from aranet4.client import AranetType
 
 from bleak.backends.scanner import AdvertisementData
 from bleak import BleakClient
+
+from aranet4.client import Aranet4Advertisement
+from aranet4.client import AranetType
 
 def fake_ad_data(name, service_uuid, manufacturer_data, address="00:11:22:33:44:55"):
     """Return a BluetoothServiceInfoBleak for use in testing."""

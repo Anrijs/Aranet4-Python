@@ -1,6 +1,6 @@
-import aranet4
-import datetime
 import csv
+
+import aranet4
 
 # aranet4 mac address
 device_mac = "XX:XX:XX:XX:XX:XX"
@@ -18,7 +18,7 @@ records = aranet4.client.get_all_records(
 )
 
 # write CSV file
-with open('aranet_history.csv', 'w') as file:
+with open('aranet_history.csv', 'w', encoding="utf-8") as file:
     writer = csv.writer(file)
 
     header = [

@@ -1,7 +1,9 @@
 from dataclasses import asdict
-import paho.mqtt.publish as publish
-import aranet4
 import sys
+
+import paho.mqtt.publish as publish
+
+import aranet4
 
 def buildMsgs(readings, topic):
     return [
@@ -44,12 +46,12 @@ def main(argv):
     pwd =  readArg(argv, "-p", "")
 
     auth = None
-    
+
     if len(user) > 0:
         auth = {"username":user}
         if len(pwd) > 0: auth["password"] = pwd
 
-    if (topic[-1] != "/"): topic += "/"
+    if topic[-1] != "/": topic += "/"
 
     current = aranet4.client.get_current_readings(device_mac)
 
@@ -58,4 +60,4 @@ def main(argv):
 
 
 if __name__== "__main__":
-  main(sys.argv[1:])
+    main(sys.argv[1:])

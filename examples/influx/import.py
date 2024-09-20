@@ -1,9 +1,8 @@
-import aranet4
-import requests
-import time
 import datetime
 import sys
+
 from influxdb import InfluxDBClient
+import requests
 
 def mkpt(device, key, value, timestr):
     return {
@@ -30,12 +29,12 @@ def main(argv):
     results = []
 
     device_name = argv[1]
-    with open(argv[0]) as f:
+    with open(argv[0], encoding="utf-8") as f:
         lines = f.readlines()
 
     for ln in lines:
         pt = ln.strip().split(";")
-        if (len(pt) < 5):
+        if len(pt) < 5:
             continue
 
         id = pt[0]
@@ -73,7 +72,7 @@ def main(argv):
         c = r["co2"]
         i = r["id"]
 
-        if (len(pts) > 10000): # flush
+        if len(pts) > 10000: # flush
             client.write_points(pts)
             pts = []
 
@@ -85,4 +84,4 @@ def main(argv):
     client.write_points(pts)
 
 if __name__== "__main__":
-  main(sys.argv[1:])
+    main(sys.argv[1:])

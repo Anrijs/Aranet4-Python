@@ -128,9 +128,9 @@ def print_records(records):
     print(f"{'Device Name':<15}: {records.name:>20}")
     print(f"{'Device Version':<15}: {records.version:>20}")
     print("-" * char_repeat)
-    print(f"{'id': ^4} | {'date': ^25} |", end=""),
+    print(f"{'id': ^4} | {'date': ^25} |", end="")
     if records.filter.incl_co2:
-        print(f" {'co2':^6} |", end=""),
+        print(f" {'co2':^6} |", end="")
     if records.filter.incl_temperature:
         print(" temp |", end="")
     if records.filter.incl_humidity:
@@ -144,7 +144,7 @@ def print_records(records):
     if records.filter.incl_rad_dose_total:
         print(" rad_total |", end="")
     if records.filter.incl_radon_concentration:
-        print(f" {'radon':^5} |", end=""),
+        print(f" {'radon':^5} |", end="")
     print("")
     print("-" * char_repeat)
 
@@ -183,7 +183,7 @@ def write_csv(filename, log_data):
     :param filename: file name
     :param log_data: `client.Record` data object
     """
-    with open(filename, "w", newline="") as csvfile:
+    with open(filename, "w", encoding="utf-8", newline="") as csvfile:
         fieldnames = ["date"]
         if log_data.filter.incl_co2:
             fieldnames.append("co2")
@@ -221,7 +221,7 @@ def post_data(url, current):
         url,
         data=data,
     )
-    print("Pushing data: {:s}".format(r.text))
+    print(f"Pushing data: {r.text}")
 
 
 def wait_for_new_record(address):
@@ -242,7 +242,7 @@ def main(argv):
         devices = client.find_nearby(store_scan_result)
         print(f"Scan finished. Found {len(devices)}")
         print()
-        for addr, advertisement in found.items():
+        for _, advertisement in found.items():
             if advertisement.readings:
                 print(advertisement.readings.toString(advertisement))
             else:
