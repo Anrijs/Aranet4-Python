@@ -18,8 +18,8 @@ records = aranet4.client.get_all_records(
 )
 
 # write CSV file
-with open('aranet_history.csv', 'w', encoding="utf-8") as file:
-    writer = csv.writer(file)
+with open('aranet_history.csv', 'w', encoding="utf-8") as csv_file:
+    writer = csv.writer(csv_file)
 
     header = [
         "date",

@@ -183,7 +183,7 @@ def write_csv(filename, log_data):
     :param filename: file name
     :param log_data: `client.Record` data object
     """
-    with open(filename, "w", encoding="utf-8", newline="") as csvfile:
+    with open(file=filename, mode="w", encoding="utf-8", newline="") as csv_file:
         fieldnames = ["date"]
         if log_data.filter.incl_co2:
             fieldnames.append("co2")
@@ -201,7 +201,7 @@ def write_csv(filename, log_data):
             fieldnames.append("rad_dose_total")
         if log_data.filter.incl_radon_concentration:
             fieldnames.append("radon_concentration")
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction="ignore")
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction="ignore")
 
         writer.writeheader()
 

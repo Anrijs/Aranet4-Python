@@ -29,8 +29,8 @@ def main(argv):
     results = []
 
     device_name = argv[1]
-    with open(argv[0], encoding="utf-8") as f:
-        lines = f.readlines()
+    with open(argv[0], encoding="utf-8") as file:
+        lines = file.readlines()
 
     for ln in lines:
         pt = ln.strip().split(";")
