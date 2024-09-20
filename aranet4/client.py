@@ -10,6 +10,7 @@ from typing import List, NamedTuple
 from bleak import BleakClient
 from bleak import BleakScanner
 from bleak.backends.device import BLEDevice
+from bleak.uuids import normalize_uuid_16
 
 
 class Aranet4Error(Exception):
@@ -626,15 +627,18 @@ class Aranet4:
     # Param return value if no data
     AR4_NO_DATA_FOR_PARAM = -1
 
-    # Manufacurer id
+    # Company Identifier (Akciju sabiedriba "SAF TEHNIKA")
     MANUFACTURER_ID = 0x0702
 
-    # Aranet UUIDs and handles
-    # Services
+    # Member Service UUID
     AR4_OLD_SERVICE = "f0cd1400-95da-4f4b-9ac8-aa55d312af0c" # until v1.2.0
-    AR4_SERVICE = "0000fce0-0000-1000-8000-00805f9b34fb" # v1.2.0 and later
-    GENERIC_SERVICE = "00001800-0000-1000-8000-00805f9b34fb"
-    COMMON_SERVICE = "0000180a-0000-1000-8000-00805f9b34fb"
+    AR4_SERVICE = normalize_uuid_16(0xfce0) # v1.2.0 and later
+
+    # GAP Service
+    #COMMON_SERVICE_GAP = normalize_uuid_16(0x1800)
+
+    # Device Information Service
+    #COMMON_SERVICE_DIS = normalize_uuid_16(0x180a)
 
     # Read / Aranet service
     AR4_READ_CURRENT_READINGS = "f0cd1503-95da-4f4b-9ac8-aa55d312af0c"
@@ -649,18 +653,15 @@ class Aranet4:
     AR4_READ_HISTORY_READINGS_V2 = "f0cd2005-95da-4f4b-9ac8-aa55d312af0c"
     AR4_READ_SENSOR_STATE = "f0cd1401-95da-4f4b-9ac8-aa55d312af0c"
 
-
-    # Read / Generic service
-    GENERIC_READ_DEVICE_NAME = "00002a00-0000-1000-8000-00805f9b34fb"
-
-    # Read / Common service
-    COMMON_READ_MANUFACTURER_NAME = "00002a29-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_MODEL_NUMBER = "00002a24-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_SERIAL_NO = "00002a25-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_HW_REV = "00002a27-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_FACTORY_SW_REV = "00002a28-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_SW_REV = "00002a26-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_BATTERY = "00002a19-0000-1000-8000-00805f9b34fb"
+    # Read / Common characteristics 
+    COMMON_READ_DEVICE_NAME = normalize_uuid_16(0x2a00)
+    COMMON_READ_BATTERY = normalize_uuid_16(0x2a19)
+    COMMON_READ_MODEL_NUMBER = normalize_uuid_16(0x2a24)
+    COMMON_READ_SERIAL_NO = normalize_uuid_16(0x2a25)
+    COMMON_READ_SW_REV = normalize_uuid_16(0x2a26)
+    COMMON_READ_HW_REV = normalize_uuid_16(0x2a27)
+    COMMON_READ_FACTORY_SW_REV = normalize_uuid_16(0x2a28)
+    COMMON_READ_MANUFACTURER_NAME = normalize_uuid_16(0x2a29)
 
     # Write / Aranet service
     AR4_WRITE_CMD = "f0cd1402-95da-4f4b-9ac8-aa55d312af0c"
@@ -740,7 +741,7 @@ class Aranet4:
     async def get_name(self):
         """Get name of remote device"""
         try:
-            raw_bytes = await self.device.read_gatt_char(self.GENERIC_READ_DEVICE_NAME)
+            raw_bytes = await self.device.read_gatt_char(self.COMMON_READ_DEVICE_NAME)
             return raw_bytes.decode("utf-8")
         except:
             # fallback to serial number
