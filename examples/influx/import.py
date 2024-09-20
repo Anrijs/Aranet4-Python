@@ -2,7 +2,6 @@ import datetime
 import sys
 
 from influxdb import InfluxDBClient
-import requests
 
 def mkpt(device, key, value, timestr):
     return {
@@ -70,7 +69,7 @@ def main(argv):
         p = r["pressure"]
         h = r["humidity"]
         c = r["co2"]
-        i = r["id"]
+        #i = r["id"]
 
         if len(pts) > 10000: # flush
             client.write_points(pts)

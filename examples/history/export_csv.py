@@ -2,7 +2,7 @@ import csv
 
 import aranet4
 
-# aranet4 mac address
+# Aranet4 MAC address
 device_mac = "XX:XX:XX:XX:XX:XX"
 
 # Selection filter. Will export last 25 records
@@ -17,7 +17,7 @@ records = aranet4.client.get_all_records(
     remove_empty=True # This will remove blank records, if range parameters (start,end,last) are specified
 )
 
-# write CSV file
+# Write CSV file
 with open('aranet_history.csv', 'w', encoding="utf-8") as csv_file:
     writer = csv.writer(csv_file)
 

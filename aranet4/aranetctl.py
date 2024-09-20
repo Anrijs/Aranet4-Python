@@ -218,8 +218,9 @@ def post_data(url, current):
     data = current.toDict()
     data["time"] = t.timestamp()
     r = requests.post(
-        url,
+        url=url,
         data=data,
+        timeout=300
     )
     print(f"Pushing data: {r.text}")
 

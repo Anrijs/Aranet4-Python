@@ -1,7 +1,7 @@
 from dataclasses import asdict
 import sys
 
-import paho.mqtt.publish as publish
+from paho.mqtt import publish
 
 import aranet4
 
@@ -49,9 +49,12 @@ def main(argv):
 
     if len(user) > 0:
         auth = {"username":user}
-        if len(pwd) > 0: auth["password"] = pwd
 
-    if topic[-1] != "/": topic += "/"
+        if len(pwd) > 0:
+            auth["password"] = pwd
+
+    if topic[-1] != "/":
+        topic += "/"
 
     current = aranet4.client.get_current_readings(device_mac)
 

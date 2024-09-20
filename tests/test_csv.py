@@ -33,13 +33,12 @@ class CSVCreation(unittest.TestCase):
 
     def test_simple_write(self):
         aranetctl.write_csv(self.test_file.name, self.records)
-        ref = data_file.read_text().splitlines(keepends=False)
-        new = Path(self.test_file.name).read_text().splitlines(keepends=False)
+        ref = data_file.read_text(encoding="utf-8").splitlines(keepends=False)
+        new = Path(self.test_file.name).read_text(encoding="utf-8").splitlines(keepends=False)
         cmp_result = list(
             difflib.context_diff(ref, new, fromfile="reference", tofile="test output")
         )
         self.assertListEqual([], cmp_result)
-
 
 if __name__ == "__main__":
     unittest.main()

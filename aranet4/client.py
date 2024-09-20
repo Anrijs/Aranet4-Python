@@ -165,8 +165,10 @@ class CurrentReading:
             d = math.floor(self.radiation_duration / 86400)
 
             dose_duration = str(m) + "m"
-            if h > 0: dose_duration = str(h) + "h " + dose_duration
-            if d > 0: dose_duration = str(d) + "d " + dose_duration
+            if h > 0:
+                dose_duration = str(h) + "h " + dose_duration
+            if d > 0:
+                dose_duration = str(d) + "d " + dose_duration
 
             ret += f"  Dose rate:      {self.radiation_rate/1000:.02f} uSv/h\n"
             ret += f"  Dose total:     {self.radiation_total/1000000:.04f} mSv/{dose_duration}\n"
@@ -735,7 +737,7 @@ class Aranet4:
         except:
             # fallback to serial number
             raw_bytes = await self.device.read_gatt_char(self.COMMON_READ_SERIAL_NO)
-            return "Aranet4 {}".format(raw_bytes.decode("utf-8"))
+            return f"Aranet4 {raw_bytes.decode('utf-8')}"
 
     async def get_version(self):
         """Get firmware version of remote device"""

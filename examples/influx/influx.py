@@ -80,7 +80,7 @@ def main(argv):
         p = r["pressure"]
         h = r["humidity"]
         c = r["co2"]
-        i = r["id"]
+        #i = r["id"]
 
         if len(pts) > 2500: # flush
             client.write_points(pts)
