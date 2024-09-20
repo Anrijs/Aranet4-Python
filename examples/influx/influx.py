@@ -47,7 +47,7 @@ def main(argv):
     device_name = argv[1]
 
     client = InfluxDBClient("127.0.0.1", "8086", "root", "root", "aranet4")
-    client.create_database('aranet4')
+    client.create_database("aranet4")
 
     if hist:
         print("Fetching sensor history...")
@@ -75,7 +75,7 @@ def main(argv):
 
     print("Sending history to InfluxDB...")
     for r in results:
-        strtim = datetime.datetime.utcfromtimestamp(r["time"]).strftime('%Y-%m-%dT%H:%M:%SZ') # ISO 8601 UTC
+        strtim = datetime.datetime.utcfromtimestamp(r["time"]).strftime("%Y-%m-%dT%H:%M:%SZ") # ISO 8601 UTC
         t = r["temperature"]
         p = r["pressure"]
         h = r["humidity"]

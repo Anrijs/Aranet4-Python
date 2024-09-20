@@ -53,7 +53,7 @@ base_args = dict(
     co2=True,
     humi=True,
     pres=True,
-    temp=True,
+    temp=True
 )
 
 
@@ -101,7 +101,7 @@ class DataManipulation(unittest.TestCase):
 
     def test_calc_log_last_n(self):
         mock_points = [datetime.datetime.now(datetime.timezone.utc)] * 200
-        start, end = client._calc_start_end(mock_points, {'last': 20})
+        start, end = client._calc_start_end(mock_points, {"last": 20})
         # Requested numbers are inclusive so difference is 19 although
         # 20 data points have been requested
         self.assertEqual(181, start)

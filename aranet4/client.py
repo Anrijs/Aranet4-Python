@@ -425,7 +425,7 @@ class Aranet4Advertisement:
 
         if device and ad_data:
             has_manufacturer_data = Aranet4.MANUFACTURER_ID in ad_data.manufacturer_data
-            self.rssi = getattr(ad_data, 'rssi', None)
+            self.rssi = getattr(ad_data, "rssi", None)
 
             if has_manufacturer_data:
                 mf_data = ManufacturerData()
@@ -544,8 +544,8 @@ class SensorState:
         isAranet4 = t[0] == 0xF1 # Aranet4
         isNucleo  = t[0] == 0xF4 # Aranet Radiation
         isRadon   = t[0] == 0xF3 # Aranet Radon
-        c = format(ord(chr(t[1])), '08b')[::-1]
-        o = format(ord(chr(t[2])), '08b')[::-1]
+        c = format(ord(chr(t[1])), "08b")[::-1]
+        o = format(ord(chr(t[2])), "08b")[::-1]
 
         if isAranet4:
             self.type = AranetType.ARANET4
@@ -586,7 +586,7 @@ class SensorState:
 
     @staticmethod
     def parseCalibrationState(e):
-        t = format(ord(chr(e)), '08b')[::-1]
+        t = format(ord(chr(e)), "08b")[::-1]
         return SensorState.cond(
             t[3],
             SensorState.cond(t[2], "inErrorState", "endRequest"),
@@ -797,9 +797,9 @@ class Aranet4:
 
         header = 0x61
         val = struct.pack("<BBH", header, param.value, start)
-        # Request command: b'\x61\x01\x01\x00'
+        # Request command: b"\x61\x01\x01\x00"
         # for temperature from start at 1
-        # Request command: b'\x61\x04\xde\x01'
+        # Request command: b"\x61\x04\xde\x01"
         # for co2 from start at 478
 
         result = _empty_reading(log_size)
@@ -861,9 +861,9 @@ class Aranet4:
         header = 0x82
         unknown = 0x00
         val = struct.pack("<BBHHH", header, param.value, unknown, start, end)
-        # Request command: b'\x82\x01\x00\x00\x01\x00\xe0\x07'
+        # Request command: b"\x82\x01\x00\x00\x01\x00\xe0\x07"
         # for temperature from start at 1 and ending 2016
-        # Request command: b'\x82\x04\x00\x00\xde\x01\x3d\x05'
+        # Request command: b"\x82\x04\x00\x00\xde\x01\x3d\x05"
         # for co2 from start at 478 and end 1341
 
         # register delegate
@@ -990,7 +990,7 @@ async def _current_reading(address):
     return readings
 
 def _eval(val) -> bool:
-    falsy = ['0', 'false', 'disable', 'disabled', 'no', 'off', "none"]
+    falsy = ["0", "false", "disable", "disabled", "no", "off", "none"]
     if isinstance(val, str):
         return val.lower() not in falsy
     return bool(val)
@@ -1001,19 +1001,19 @@ async def _set_settings(address, settings, verify: bool=True) -> dict:
     await monitor.connect()
     status = {}
 
-    if 'interval' in settings:
-        intval = int(settings['interval'])
-        status['interval'] = await monitor.set_readings_interval(intval, verify)
+    if "interval" in settings:
+        intval = int(settings["interval"])
+        status["interval"] = await monitor.set_readings_interval(intval, verify)
 
-    if 'range' in settings:
-        extend = ['extend', 'extended', '1']
-        extend = settings['range'].lower() in extend
-        status['range'] = await monitor.set_bluetooth_range(extend, verify)
+    if "range" in settings:
+        extend = ["extend", "extended", "1"]
+        extend = settings["range"].lower() in extend
+        status["range"] = await monitor.set_bluetooth_range(extend, verify)
 
-    if 'integrations' in settings:
-        on = ['on', 'enable', 'enabled', '1']
-        on = settings['integrations'].lower() in on
-        status['integrations'] = await monitor.set_home_integration_enabled(on, verify)
+    if "integrations" in settings:
+        on = ["on", "enable", "enabled", "1"]
+        on = settings["integrations"].lower() in on
+        status["integrations"] = await monitor.set_home_integration_enabled(on, verify)
 
     return status
 

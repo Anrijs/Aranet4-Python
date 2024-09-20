@@ -28,7 +28,7 @@ def main(argv):
     results = []
 
     device_name = argv[1]
-    with open(argv[0], encoding="utf-8") as file:
+    with open(file=argv[0], mode="r", encoding="utf-8") as file:
         lines = file.readlines()
 
     for ln in lines:
@@ -38,7 +38,7 @@ def main(argv):
 
         id = pt[0]
         timestr = pt[1] + ":00"
-        dt = datetime.datetime.strptime(timestr, '%Y-%m-%d %H:%M:%S')
+        dt = datetime.datetime.strptime(timestr, "%Y-%m-%d %H:%M:%S")
         dt = dt - datetime.timedelta(hours=1)
 
         t = float(pt[2])
@@ -48,7 +48,7 @@ def main(argv):
 
         res = {
             "id": id,
-            "time": dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            "time": dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "temperature": t,
             "pressure": p,
             "humidity": h,
@@ -58,7 +58,7 @@ def main(argv):
         results.append(res)
 
     client = InfluxDBClient("127.0.0.1", "8086", "root", "root", "aranet4")
-    client.create_database('aranet4')
+    client.create_database("aranet4")
 
     print("Sending history to InfluxDB...")
     pts = []

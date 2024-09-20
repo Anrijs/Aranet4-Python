@@ -12,7 +12,7 @@ from aranet4 import client
 
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
-    parser.add_argument("device_mac", nargs='?', help="Aranet Bluetooth Address")
+    parser.add_argument("device_mac", nargs="?", help="Aranet Bluetooth Address")
     parser.add_argument(
         "--scan", action="store_true", help="Scan for Aranet devices"
     )
@@ -271,13 +271,13 @@ def main(argv):
         settings = {}
 
         if args.set_interval:
-            settings['interval'] = args.set_interval
+            settings["interval"] = args.set_interval
 
         if args.set_integrations:
-            settings['integrations'] = args.set_integrations
+            settings["integrations"] = args.set_integrations
 
         if args.set_btrange:
-            settings['range'] = args.set_btrange
+            settings["range"] = args.set_btrange
 
         if settings:
             result = client.set_settings(args.device_mac, settings, True)

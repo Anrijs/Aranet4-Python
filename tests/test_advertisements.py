@@ -16,7 +16,7 @@ def fake_ad_data(name, service_uuid, manufacturer_data, address="00:11:22:33:44:
         service_uuids=[service_uuid],
         rssi=-60,
         tx_power=-127,
-        platform_data=(),
+        platform_data=()
     )
 
     device = BleakClient(address)
@@ -34,27 +34,27 @@ TEST_DATA_ARANET_4 = {
     "manufacturer_data_short": {1794: b"!\x05\x03\x01\x00\x05\x00\x01C\x04\x9f\x01\x8b\'5\x0c\x02<\x00\x10"},
     "manufacturer_data_old_fw": {1794: b"\x21\x0a\x04\x00\x00\x00\x00"},
     "manufacturer_data_no_integrations": {1794: b"\x01\x00\x02\x01\x00\x00\x00"},
-    "manufacturer_data_bad": {1794: b"\x01\x00\x02"},
+    "manufacturer_data_bad": {1794: b"\x01\x00\x02"}
 }
 
 TEST_DATA_ARANET_2 = {
     "name": "Aranet2 278F8",
     "uuid": "f0cd1400-95da-4f4b-9ac8-aa55d312af0c",
     "manufacturer_data": {1794: b"\x01!\x04\x04\x01\x00\x00\x00\x00\x00\x99\x01\x00\x00\n\x02\x00;\x00x\x00R\x00d"},
-    "manufacturer_data_no_integrations": {1794: b"\x01\x01\x04\x04\x01\x00\x00\x00\x00\x00\x99\x01\x00\x00\n\x02\x00;\x00x\x00R\x00d"},
+    "manufacturer_data_no_integrations": {1794: b"\x01\x01\x04\x04\x01\x00\x00\x00\x00\x00\x99\x01\x00\x00\n\x02\x00;\x00x\x00R\x00d"}
 }
 
 TEST_DATA_ARANET_RADIATION = {
     "name": "Aranet\u2622 27DB3",
     "uuid": "f0cd1400-95da-4f4b-9ac8-aa55d312af0c",
     "manufacturer_data": {1794: b"\x02!&\x04\x01\x00\xd03\x00\x00l`\x06\x00\x82\x00\x00c\x00,\x01X\x00r"},
-    "manufacturer_data_no_integrations": {1794: b"\x02\x01&\x04\x01\x00\xd03\x00\x00l`\x06\x00\x82\x00\x00c\x00,\x01X\x00r"},
+    "manufacturer_data_no_integrations": {1794: b"\x02\x01&\x04\x01\x00\xd03\x00\x00l`\x06\x00\x82\x00\x00c\x00,\x01X\x00r"}
 }
 
 TEST_DATA_ARANET_RADON = {
     "name": "AranetRn 298C9",
     "uuid": "f0cd1400-95da-4f4b-9ac8-aa55d312af0c",
-    "manufacturer_data": {1794: b"\x03!\x04\x06\x01\x00\x00\x00\x07\x00\xfe\x01\xc9\'\xce\x01\x00d\x01X\x02\xf6\x01\x08"},
+    "manufacturer_data": {1794: b"\x03!\x04\x06\x01\x00\x00\x00\x07\x00\xfe\x01\xc9\'\xce\x01\x00d\x01X\x02\xf6\x01\x08"}
 }
 
 
@@ -128,7 +128,7 @@ class DataManipulation(unittest.TestCase):
         self._test_aranet_4(fake_ad_data(
             srcdata["name"],
             srcdata["uuid"],
-            srcdata["manufacturer_data"],
+            srcdata["manufacturer_data"]
         ))
 
     def test_aranet_4_noname(self):
@@ -136,32 +136,32 @@ class DataManipulation(unittest.TestCase):
         self._test_aranet_4(fake_ad_data(
             None,
             srcdata["uuid"],
-            srcdata["manufacturer_data"],
+            srcdata["manufacturer_data"]
         ))
 
     def test_aranet_4_invalid(self):
         data_old = fake_ad_data(
             TEST_DATA_ARANET_4["name"],
             TEST_DATA_ARANET_4["uuid"],
-            TEST_DATA_ARANET_4["manufacturer_data_old_fw"],
+            TEST_DATA_ARANET_4["manufacturer_data_old_fw"]
         )
 
         data_no_integrations = fake_ad_data(
             TEST_DATA_ARANET_4["name"],
             TEST_DATA_ARANET_4["uuid"],
-            TEST_DATA_ARANET_4["manufacturer_data_no_integrations"],
+            TEST_DATA_ARANET_4["manufacturer_data_no_integrations"]
         )
 
         data_short = fake_ad_data(
             TEST_DATA_ARANET_4["name"],
             TEST_DATA_ARANET_4["uuid"],
-            TEST_DATA_ARANET_4["manufacturer_data_short"],
+            TEST_DATA_ARANET_4["manufacturer_data_short"]
         )
 
         data_bad = fake_ad_data(
             TEST_DATA_ARANET_4["name"],
             TEST_DATA_ARANET_4["uuid"],
-            TEST_DATA_ARANET_4["manufacturer_data_bad"],
+            TEST_DATA_ARANET_4["manufacturer_data_bad"]
         )
 
         ad_old = Aranet4Advertisement(data_old["device"], data_old["ad_data"])
@@ -186,7 +186,7 @@ class DataManipulation(unittest.TestCase):
         data_no_integrations = fake_ad_data(
             TEST_DATA_ARANET_2["name"],
             TEST_DATA_ARANET_2["uuid"],
-            TEST_DATA_ARANET_2["manufacturer_data_no_integrations"],
+            TEST_DATA_ARANET_2["manufacturer_data_no_integrations"]
         )
 
         ad_no_integrations = Aranet4Advertisement(data_no_integrations["device"], data_no_integrations["ad_data"])
@@ -198,7 +198,7 @@ class DataManipulation(unittest.TestCase):
         data_no_integrations = fake_ad_data(
             TEST_DATA_ARANET_RADIATION["name"],
             TEST_DATA_ARANET_RADIATION["uuid"],
-            TEST_DATA_ARANET_RADIATION["manufacturer_data_no_integrations"],
+            TEST_DATA_ARANET_RADIATION["manufacturer_data_no_integrations"]
         )
 
         ad_no_integrations = Aranet4Advertisement(data_no_integrations["device"], data_no_integrations["ad_data"])
@@ -211,7 +211,7 @@ class DataManipulation(unittest.TestCase):
         self._test_aranet_2(fake_ad_data(
             srcdata["name"],
             srcdata["uuid"],
-            srcdata["manufacturer_data"],
+            srcdata["manufacturer_data"]
         ))
 
     def test_aranet_2_noname(self):
@@ -219,7 +219,7 @@ class DataManipulation(unittest.TestCase):
         self._test_aranet_2(fake_ad_data(
             srcdata["name"],
             srcdata["uuid"],
-            srcdata["manufacturer_data"],
+            srcdata["manufacturer_data"]
         ))
 
     def test_aranet_radiation(self):
@@ -227,7 +227,7 @@ class DataManipulation(unittest.TestCase):
         self._test_aranet_radiation(fake_ad_data(
             srcdata["name"],
             srcdata["uuid"],
-            srcdata["manufacturer_data"],
+            srcdata["manufacturer_data"]
         ))
 
     def test_aranet_radiation_noname(self):
@@ -235,7 +235,7 @@ class DataManipulation(unittest.TestCase):
         self._test_aranet_radiation(fake_ad_data(
             None,
             srcdata["uuid"],
-            srcdata["manufacturer_data"],
+            srcdata["manufacturer_data"]
         ))
 
     def test_aranet_radon(self):
@@ -243,7 +243,7 @@ class DataManipulation(unittest.TestCase):
         self._test_aranet_radon(fake_ad_data(
             srcdata["name"],
             srcdata["uuid"],
-            srcdata["manufacturer_data"],
+            srcdata["manufacturer_data"]
         ))
 
     def test_aranet_radon_noname(self):
@@ -251,7 +251,7 @@ class DataManipulation(unittest.TestCase):
         self._test_aranet_radon(fake_ad_data(
             None,
             srcdata["uuid"],
-            srcdata["manufacturer_data"],
+            srcdata["manufacturer_data"]
         ))
 
 if __name__ == "__main__":
