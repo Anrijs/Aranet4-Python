@@ -10,6 +10,7 @@ from typing import List, NamedTuple
 from bleak import BleakClient
 from bleak import BleakScanner
 from bleak.backends.device import BLEDevice
+from bleak.uuids import normalize_uuid_16
 
 
 class Aranet4Error(Exception):
@@ -618,44 +619,58 @@ class Aranet4:
     # Param return value if no data
     AR4_NO_DATA_FOR_PARAM = -1
 
-    # Manufacurer id
+    # Company Identifier (Akciju sabiedriba "SAF TEHNIKA")
     MANUFACTURER_ID = 0x0702
 
-    # Aranet UUIDs and handles
-    # Services
-    AR4_OLD_SERVICE = "f0cd1400-95da-4f4b-9ac8-aa55d312af0c" # until v1.2.0
-    AR4_SERVICE = "0000fce0-0000-1000-8000-00805f9b34fb" # v1.2.0 and later
-    GENERIC_SERVICE = "00001800-0000-1000-8000-00805f9b34fb"
-    COMMON_SERVICE = "0000180a-0000-1000-8000-00805f9b34fb"
+    # GAP Service
+    SERVICE_GAP = normalize_uuid_16(0x1800)
 
-    # Read / Aranet service
-    AR4_READ_CURRENT_READINGS = "f0cd1503-95da-4f4b-9ac8-aa55d312af0c"
-    AR4_READ_CURRENT_READINGS_DET = "f0cd3001-95da-4f4b-9ac8-aa55d312af0c"
-    AR2_READ_CURRENT_READINGS = "f0cd1504-95da-4f4b-9ac8-aa55d312af0c"
-    AR2_READ_CURRENT_READINGS_A = "f0cd3003-95da-4f4b-9ac8-aa55d312af0c" # data is same as other
-    # aranet2 has different service uids. use those
-    AR4_READ_INTERVAL = "f0cd2002-95da-4f4b-9ac8-aa55d312af0c"
-    AR4_READ_SECONDS_SINCE_UPDATE = "f0cd2004-95da-4f4b-9ac8-aa55d312af0c"
-    AR4_READ_TOTAL_READINGS = "f0cd2001-95da-4f4b-9ac8-aa55d312af0c"
-    AR4_READ_HISTORY_READINGS_V1 = "f0cd2003-95da-4f4b-9ac8-aa55d312af0c"
-    AR4_READ_HISTORY_READINGS_V2 = "f0cd2005-95da-4f4b-9ac8-aa55d312af0c"
-    AR4_READ_SENSOR_STATE = "f0cd1401-95da-4f4b-9ac8-aa55d312af0c"
+    # GAP Service Characteristics
+    CHARACTERISTIC_DEVICE_NAME = normalize_uuid_16(0x2a00)
+    CHARACTERISTIC_APPEARANCE = normalize_uuid_16(0x2a01)
 
+    # Device Information Service
+    SERVICE_DIS = normalize_uuid_16(0x180a)
 
-    # Read / Generic service
-    GENERIC_READ_DEVICE_NAME = "00002a00-0000-1000-8000-00805f9b34fb"
+    # Device Information Service Characteristics 
+    CHARACTERISTIC_SYSTEM_ID = normalize_uuid_16(0x2a23)
+    CHARACTERISTIC_MODEL_NUMBER = normalize_uuid_16(0x2a24)
+    CHARACTERISTIC_SERIAL_NO = normalize_uuid_16(0x2a25)
+    CHARACTERISTIC_SW_REV = normalize_uuid_16(0x2a26)
+    CHARACTERISTIC_HW_REV = normalize_uuid_16(0x2a27)
+    CHARACTERISTIC_SW_REV_FACTORY = normalize_uuid_16(0x2a28)
+    CHARACTERISTIC_MANUFACTURER_NAME = normalize_uuid_16(0x2a29)
 
-    # Read / Common service
-    COMMON_READ_MANUFACTURER_NAME = "00002a29-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_MODEL_NUMBER = "00002a24-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_SERIAL_NO = "00002a25-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_HW_REV = "00002a27-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_FACTORY_SW_REV = "00002a28-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_SW_REV = "00002a26-0000-1000-8000-00805f9b34fb"
-    COMMON_READ_BATTERY = "00002a19-0000-1000-8000-00805f9b34fb"
+    # Battery Service
+    SERVICE_BATTERY = normalize_uuid_16(0x180f)
 
-    # Write / Aranet service
-    AR4_WRITE_CMD = "f0cd1402-95da-4f4b-9ac8-aa55d312af0c"
+    # Battery Service Characteristics
+    CHARACTERISTIC_BATTERY_LEVEL = normalize_uuid_16(0x2a19)
+
+    # SAF Tehnika Service
+    SERVICE_SAF_TEHNIKA = normalize_uuid_16(0xfce0) # v1.2.0 and later
+    SERVICE_SAF_TEHNIKA_OLD = "f0cd1400-95da-4f4b-9ac8-aa55d312af0c" # until v1.2.0
+
+    # SAF Tehnika Service Characteristics (Aranet2 has different readings characteristic uuids)
+    CHARACTERISTIC_SENSOR_STATE = "f0cd1401-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_CMD = "f0cd1402-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_CALIBRATION_DATA = "f0cd1502-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_CURRENT_READINGS = "f0cd1503-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_CURRENT_READINGS_AR2 = "f0cd1504-95da-4f4b-9ac8-aa55d312af0c" # Aranet2 Only
+    CHARACTERISTIC_TOTAL_READINGS = "f0cd2001-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_INTERVAL = "f0cd2002-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_HISTORY_READINGS_V1 = "f0cd2003-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_SECONDS_SINCE_UPDATE = "f0cd2004-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_HISTORY_READINGS_V2 = "f0cd2005-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_CURRENT_READINGS_DET = "f0cd3001-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_CURRENT_READINGS_A = "f0cd3002-95da-4f4b-9ac8-aa55d312af0c"
+    CHARACTERISTIC_CURRENT_READINGS_A_AR2 = "f0cd3003-95da-4f4b-9ac8-aa55d312af0c" # Aranet2 Only
+
+    # Nordic Semiconductor ASA Service
+    SERVICE_NORDIC_SEMICONDUCTOR = normalize_uuid_16(0xfe59)
+    
+    # Nordic Semiconductor ASA Service Characteristics
+    CHARACTERISTIC_SECURE_DFU = "8ec90003-f315-4f60-9fb8-838830daea50"
 
     # Regexp
     REGEX_MAC  = "([0-9a-f]{2}[:-]){5}([0-9a-f]{2})"
@@ -684,11 +699,11 @@ class Aranet4:
         readings = CurrentReading()
 
         new_aranet_char = self.device.services.get_characteristic(
-            self.AR2_READ_CURRENT_READINGS
+            self.CHARACTERISTIC_CURRENT_READINGS_AR2
         )
 
         if new_aranet_char:
-            uuid = self.AR2_READ_CURRENT_READINGS
+            uuid = self.CHARACTERISTIC_CURRENT_READINGS_AR2
             raw_bytes = await self.device.read_gatt_char(uuid)
 
             isRadon = raw_bytes[0] == 3
@@ -711,11 +726,11 @@ class Aranet4:
                 readings.decode(value, AranetType.ARANET2, True)
         else:
             if details:
-                uuid = self.AR4_READ_CURRENT_READINGS_DET
+                uuid = self.CHARACTERISTIC_CURRENT_READINGS_DET
                 # co2, temp, pressure, humidity, battery, status
                 value_fmt = "<HHHBBBHH"
             else:
-                uuid = self.AR4_READ_CURRENT_READINGS
+                uuid = self.CHARACTERISTIC_CURRENT_READINGS
                 # co2, temp, pressure, humidity, battery, status, interval, ^
                 value_fmt = "<HHHBBB"
 
@@ -726,22 +741,22 @@ class Aranet4:
 
     async def get_interval(self) -> int:
         """Get the value for how often datapoints are logged on device"""
-        raw_bytes = await self.device.read_gatt_char(self.AR4_READ_INTERVAL)
+        raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_INTERVAL)
         return int.from_bytes(raw_bytes, byteorder="little")
 
     async def get_name(self):
         """Get name of remote device"""
         try:
-            raw_bytes = await self.device.read_gatt_char(self.GENERIC_READ_DEVICE_NAME)
+            raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_DEVICE_NAME)
             return raw_bytes.decode("utf-8")
         except:
             # fallback to serial number
-            raw_bytes = await self.device.read_gatt_char(self.COMMON_READ_SERIAL_NO)
-            return f"Aranet4 {raw_bytes.decode('utf-8')}"
+            raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_SERIAL_NO)
+            return "Aranet4 {}".format(raw_bytes.decode("utf-8"))
 
     async def get_version(self):
         """Get firmware version of remote device"""
-        raw_bytes = await self.device.read_gatt_char(self.COMMON_READ_SW_REV)
+        raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_SW_REV)
         return raw_bytes.decode("utf-8")
 
     async def get_seconds_since_update(self):
@@ -749,12 +764,12 @@ class Aranet4:
         Get the value for how long (in seconds) has passed since last
         datapoint was logged
         """
-        raw_bytes = await self.device.read_gatt_char(self.AR4_READ_SECONDS_SINCE_UPDATE)
+        raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_SECONDS_SINCE_UPDATE)
         return int.from_bytes(raw_bytes, byteorder="little")
 
     async def get_total_readings(self):
         """Return the count of how many datapoints are logged on device"""
-        raw_bytes = await self.device.read_gatt_char(self.AR4_READ_TOTAL_READINGS)
+        raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_TOTAL_READINGS)
         return int.from_bytes(raw_bytes, byteorder="little")
 
     async def get_last_measurement_date(self, use_epoch: bool = False):
@@ -777,7 +792,7 @@ class Aranet4:
         """
 
         history_v2 = self.device.services.get_characteristic(
-            self.AR4_READ_HISTORY_READINGS_V2
+            self.CHARACTERISTIC_HISTORY_READINGS_V2
         )
 
         if history_v2 is not None:
@@ -804,12 +819,12 @@ class Aranet4:
 
         result = _empty_reading(log_size)
 
-        await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
+        await self.device.write_gatt_char(self.CHARACTERISTIC_CMD, val, True)
 
         reading = True
         while reading:
             packet = await self.device.read_gatt_char(
-                self.AR4_READ_HISTORY_READINGS_V2
+                self.CHARACTERISTIC_HISTORY_READINGS_V2
             )
 
             header = HistoryHeader(*struct.unpack("<BHHHHB", packet[:10]))
@@ -868,24 +883,24 @@ class Aranet4:
 
         # register delegate
         delegate = Aranet4HistoryDelegate(
-            self.AR4_READ_HISTORY_READINGS_V1, param, log_size, self
+            self.CHARACTERISTIC_HISTORY_READINGS_V1, param, log_size, self
         )
 
-        await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
+        await self.device.write_gatt_char(self.CHARACTERISTIC_CMD, val, True)
         self.reading = True
         await self.device.start_notify(
-            self.AR4_READ_HISTORY_READINGS_V1, delegate.handle_notification
+            self.CHARACTERISTIC_HISTORY_READINGS_V1, delegate.handle_notification
         )
         while self.reading:
             await asyncio.sleep(0.1)
-        await self.device.stop_notify(self.AR4_READ_HISTORY_READINGS_V1)
+        await self.device.stop_notify(self.CHARACTERISTIC_HISTORY_READINGS_V1)
         return delegate.result
 
     async def set_readings_interval(self, interval: int, verify: bool=True):
         """Set reading interval"""
         header = 0x90
         val = struct.pack("<BB", header, interval)
-        await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
+        await self.device.write_gatt_char(self.CHARACTERISTIC_CMD, val, True)
         if verify:
             iv = await self.get_interval()
             return interval == (iv / 60)
@@ -898,7 +913,7 @@ class Aranet4:
         """
         header = 0x91
         val = struct.pack("<BB", header, 1 if enabled else 0)
-        await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
+        await self.device.write_gatt_char(self.CHARACTERISTIC_CMD, val, True)
         if verify:
             state = await self.get_sensor_state()
             return enabled == state.isOpenForIntegration
@@ -908,7 +923,7 @@ class Aranet4:
         """Set bluetooth range"""
         header = 0x92
         val = struct.pack("<BB", header, 1 if extended else 0)
-        await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
+        await self.device.write_gatt_char(self.CHARACTERISTIC_CMD, val, True)
         if verify:
             state = await self.get_sensor_state()
             if extended:
@@ -917,7 +932,7 @@ class Aranet4:
 
     async def get_sensor_state(self):
         """Return the count of how many datapoints are logged on device"""
-        raw_bytes = await self.device.read_gatt_char(self.AR4_READ_SENSOR_STATE)
+        raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_SENSOR_STATE)
         state = SensorState()
         state.decode(raw_bytes)
         return state
@@ -1035,7 +1050,7 @@ class Aranet4Scanner:
         self.on_scan(adv)
 
     def __init__(self, on_scan):
-        uuids = [Aranet4.AR4_SERVICE, Aranet4.AR4_OLD_SERVICE]
+        uuids = [Aranet4.SERVICE_SAF_TEHNIKA, Aranet4.SERVICE_SAF_TEHNIKA_OLD]
         self.on_scan = on_scan
         self.scanner = BleakScanner(
             detection_callback=self._process_advertisement,
