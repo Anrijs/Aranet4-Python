@@ -30,14 +30,21 @@ class Param(IntEnum):
     RADIATION_DOSE_INTEGRAL = 9
     RADON_CONCENTRATION = 10
 
-class Status(IntEnum):
+class Color(IntEnum):
     """Enum for the different status colors"""
 
-    NONE = 0
+    ERROR = 0
     GREEN = 1
-    AMBER = 2
+    YELLOW = 2
     RED = 3
-    BLUE = 4
+
+class Status(IntEnum):
+    """Enum for the different status alerts"""
+
+    OFF = 0
+    UNDER = 1
+    OVER = 2
+    DASH = 3
 
 class AranetType(IntEnum):
     """Enum for the different Aranet devices"""
@@ -76,9 +83,7 @@ class Aranet4HistoryDelegate:
 
         if self.param != data_type:
             (
-                "ERROR: invalid parameter. Got {:02X}, expected {:02X}".format(
-                    data_type, self.param
-                )
+                print(f"ERROR: invalid parameter. Got {data_type:02X}, expected {self.param:02X}")
             )
             return
         pattern = "<B" if data_type == Param.HUMIDITY else "<H"
@@ -119,8 +124,8 @@ class CurrentReading:
 
     battery: int = -1
     status: int = -1
-    status_t: int = -1
-    status_h: int = -1
+    status_temperature: int = -1
+    status_humidity: int = -1
     interval: int = -1
     ago: int = -1
     stored: int = -1
@@ -151,8 +156,8 @@ class CurrentReading:
             ret += f"  Temperature:    {self.temperature:.01f} \u00b0C\n"
             ret += f"  Humidity:       {self.humidity} %\n"
             ret += f"  Battery:        {self.battery} %\n"
-            ret += f"  Status Temp.:   {self.status_t.name}\n"
-            ret += f"  Status Humid.:  {self.status_h.name}\n"
+            ret += f"  Status Temp.:   {self.status_temperature.name}\n"
+            ret += f"  Status Humid.:  {self.status_humidity.name}\n"
             ret += f"  Age:            {self.ago}/{self.interval} s\n"
         elif self.type == AranetType.ARANET_RADIATION:
             m = math.floor(self.radiation_duration / 60 % 60)
@@ -160,8 +165,10 @@ class CurrentReading:
             d = math.floor(self.radiation_duration / 86400)
 
             dose_duration = str(m) + "m"
-            if h > 0: dose_duration = str(h) + "h " + dose_duration
-            if d > 0: dose_duration = str(d) + "d " + dose_duration
+            if h > 0:
+                dose_duration = str(h) + "h " + dose_duration
+            if d > 0:
+                dose_duration = str(d) + "d " + dose_duration
 
             ret += f"  Dose rate:      {self.radiation_rate/1000:.02f} uSv/h\n"
             ret += f"  Dose total:     {self.radiation_total/1000000:.04f} mSv/{dose_duration}\n"
@@ -177,7 +184,7 @@ class CurrentReading:
             ret += f"  Age:            {self.ago}/{self.interval} s\n"
 
         else:
-            ret += f"  Unknown device type\n"
+            ret += "  Unknown device type\n"
 
         return ret
 
@@ -223,7 +230,7 @@ class CurrentReading:
         self.pressure = self._set(Param.PRESSURE, value[2])
         self.humidity = self._set(Param.HUMIDITY, value[3])
         self.battery = value[4]
-        self.status = Status(value[5])
+        self.status = Color(value[5])
         # If extended data list
         if len(value) > 6:
             self.interval = value[6]
@@ -237,13 +244,15 @@ class CurrentReading:
             self.temperature = self._set(Param.TEMPERATURE, value[4])
             self.humidity = self._set(Param.HUMIDITY2, value[5])
             self.battery = value[3]
-            self.status_h, self.status_t = self._decode_status_flags(value[6])
+            self.status_humidity = Status(value[6] & 0b0011)
+            self.status_temperature = Status(value[6] & 0b1100)
             self.interval = value[1]
             self.ago = value[2]
         else:
             self.temperature = self._set(Param.TEMPERATURE, value[1])
             self.humidity = self._set(Param.HUMIDITY2, value[3])
-            self.status_h, self.status_t = self._decode_status_flags(value[6])
+            self.status_humidity = Status(value[6] & 0b0011)
+            self.status_temperature = Status(value[6] & 0b1100)
             self.battery = value[5]
             self.interval = value[7]
             self.ago = value[8]
@@ -277,7 +286,7 @@ class CurrentReading:
             self.pressure = self._set(Param.PRESSURE, value[5])
             self.humidity = self._set(Param.HUMIDITY2, value[6])
             self.radon_concentration = self._set(Param.RADON_CONCENTRATION, value[7])
-            self.status = Status(value[8])
+            self.status = Color(value[8])
             self.radon_concentration_avg_24h = self._parse_avg_radon(value[9], value[10])["value"]
             self.radon_concentration_avg_7d  = self._parse_avg_radon(value[11], value[12])["value"]
             self.radon_concentration_avg_30d = self._parse_avg_radon(value[13], value[14])["value"]
@@ -287,7 +296,7 @@ class CurrentReading:
             self.pressure = self._set(Param.PRESSURE, value[2])
             self.humidity = self._set(Param.HUMIDITY2, value[3])
             self.battery = value[5]
-            self.status = self.status = Status(value[6])
+            self.status = Color(value[6])
             self.interval = value[7]
             self.ago = value[8]
             self.counter = value[9]
@@ -307,23 +316,6 @@ class CurrentReading:
             "value": value,
             "progress": progress
     }
-
-    @staticmethod
-    def _decode_status_flags(status):
-        status_t = Status.GREEN
-        status_h = Status.GREEN
-
-        if status & 0b0001:
-            status_h = Status.BLUE
-        elif status & 0b0010:
-            status_h = Status.RED
-
-        if status & 0b0100:
-            status_t = Status.BLUE
-        elif status & 0b1000:
-            status_t = Status.RED
-
-        return (status_h, status_t)
 
     @staticmethod
     def _set(param: Param, value: int):
@@ -413,7 +405,7 @@ class ManufacturerData:
         self.version = Version(value[3], value[2], value[1])
 
     def _get_b(self, value, pos):
-        return True if value & (1 << pos) else False
+        return (value & (1 << pos)) != 0
 
     def _get_uint2(self, value, pos):
         return (value >> pos) & 0x03
@@ -433,7 +425,7 @@ class Aranet4Advertisement:
 
         if device and ad_data:
             has_manufacturer_data = Aranet4.MANUFACTURER_ID in ad_data.manufacturer_data
-            self.rssi = getattr(ad_data, 'rssi', None)
+            self.rssi = getattr(ad_data, "rssi", None)
 
             if has_manufacturer_data:
                 mf_data = ManufacturerData()
@@ -552,8 +544,8 @@ class SensorState:
         isAranet4 = t[0] == 0xF1 # Aranet4
         isNucleo  = t[0] == 0xF4 # Aranet Radiation
         isRadon   = t[0] == 0xF3 # Aranet Radon
-        c = format(ord(chr(t[1])), '08b')[::-1]
-        o = format(ord(chr(t[2])), '08b')[::-1]
+        c = format(ord(chr(t[1])), "08b")[::-1]
+        o = format(ord(chr(t[2])), "08b")[::-1]
 
         if isAranet4:
             self.type = AranetType.ARANET4
@@ -594,7 +586,7 @@ class SensorState:
 
     @staticmethod
     def parseCalibrationState(e):
-        t = format(ord(chr(e)), '08b')[::-1]
+        t = format(ord(chr(e)), "08b")[::-1]
         return SensorState.cond(
             t[3],
             SensorState.cond(t[2], "inErrorState", "endRequest"),
@@ -602,10 +594,10 @@ class SensorState:
         )
 
     @staticmethod
-    def cond(check, tru, fal):
+    def cond(check, true_condition, false_condition):
         if _eval(check):
-            return tru
-        return fal
+            return true_condition
+        return false_condition
 
 
 class HistoryHeader(NamedTuple):
@@ -668,7 +660,7 @@ class Aranet4:
     # Regexp
     REGEX_MAC  = "([0-9a-f]{2}[:-]){5}([0-9a-f]{2})"
     REGEX_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-    REGEX_ADDR = "({})|({})".format(REGEX_MAC, REGEX_UUID)
+    REGEX_ADDR = f"({REGEX_MAC})|({REGEX_UUID})"
 
     def __init__(self, address: str):
         if not re.match(self.REGEX_ADDR, address.lower()):
@@ -745,7 +737,7 @@ class Aranet4:
         except:
             # fallback to serial number
             raw_bytes = await self.device.read_gatt_char(self.COMMON_READ_SERIAL_NO)
-            return "Aranet4 {}".format(raw_bytes.decode("utf-8"))
+            return f"Aranet4 {raw_bytes.decode('utf-8')}"
 
     async def get_version(self):
         """Get firmware version of remote device"""
@@ -801,14 +793,13 @@ class Aranet4:
         List will be length of "total datapoints". If index is outside `start`
         and `end` request then default of `-1` is returned for those datapoints.
         """
-        if start < 1:
-            start = 0x0001
+        start = max(start, 0x0001)
 
         header = 0x61
         val = struct.pack("<BBH", header, param.value, start)
-        # Request command: b'\x61\x01\x01\x00'
+        # Request command: b"\x61\x01\x01\x00"
         # for temperature from start at 1
-        # Request command: b'\x61\x04\xde\x01'
+        # Request command: b"\x61\x04\xde\x01"
         # for co2 from start at 478
 
         result = _empty_reading(log_size)
@@ -865,15 +856,14 @@ class Aranet4:
         List will be length of "total datapoints". If index is outside `start`
         and `end` request then default of `-1` is returned for those datapoints.
         """
-        if start < 1:
-            start = 0x0001
+        start = max(start, 0x0001)
 
         header = 0x82
         unknown = 0x00
         val = struct.pack("<BBHHH", header, param.value, unknown, start, end)
-        # Request command: b'\x82\x01\x00\x00\x01\x00\xe0\x07'
+        # Request command: b"\x82\x01\x00\x00\x01\x00\xe0\x07"
         # for temperature from start at 1 and ending 2016
-        # Request command: b'\x82\x04\x00\x00\xde\x01\x3d\x05'
+        # Request command: b"\x82\x04\x00\x00\xde\x01\x3d\x05"
         # for co2 from start at 478 and end 1341
 
         # register delegate
@@ -881,7 +871,7 @@ class Aranet4:
             self.AR4_READ_HISTORY_READINGS_V1, param, log_size, self
         )
 
-        value = await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
+        await self.device.write_gatt_char(self.AR4_WRITE_CMD, val, True)
         self.reading = True
         await self.device.start_notify(
             self.AR4_READ_HISTORY_READINGS_V1, delegate.handle_notification
@@ -923,8 +913,7 @@ class Aranet4:
             state = await self.get_sensor_state()
             if extended:
                 return state.bluetoothRange == "extended"
-            else:
-                return state.bluetoothRange == "normal"
+            return state.bluetoothRange == "normal"
 
     async def get_sensor_state(self):
         """Return the count of how many datapoints are logged on device"""
@@ -1001,7 +990,7 @@ async def _current_reading(address):
     return readings
 
 def _eval(val) -> bool:
-    falsy = ['0', 'false', 'disable', 'disabled', 'no', 'off', "none"]
+    falsy = ["0", "false", "disable", "disabled", "no", "off", "none"]
     if isinstance(val, str):
         return val.lower() not in falsy
     return bool(val)
@@ -1012,19 +1001,19 @@ async def _set_settings(address, settings, verify: bool=True) -> dict:
     await monitor.connect()
     status = {}
 
-    if 'interval' in settings:
-        intval = int(settings['interval'])
-        status['interval'] = await monitor.set_readings_interval(intval, verify)
+    if "interval" in settings:
+        intval = int(settings["interval"])
+        status["interval"] = await monitor.set_readings_interval(intval, verify)
 
-    if 'range' in settings:
-        extend = ['extend', 'extended', '1']
-        extend = settings['range'].lower() in extend
-        status['range'] = await monitor.set_bluetooth_range(extend, verify)
+    if "range" in settings:
+        extend = ["extend", "extended", "1"]
+        extend = settings["range"].lower() in extend
+        status["range"] = await monitor.set_bluetooth_range(extend, verify)
 
-    if 'integrations' in settings:
-        on = ['on', 'enable', 'enabled', '1']
-        on = settings['integrations'].lower() in on
-        status['integrations'] = await monitor.set_home_integration_enabled(on, verify)
+    if "integrations" in settings:
+        on = ["on", "enable", "enabled", "1"]
+        on = settings["integrations"].lower() in on
+        status["integrations"] = await monitor.set_home_integration_enabled(on, verify)
 
     return status
 
@@ -1100,7 +1089,7 @@ async def _all_records(address, entry_filter, remove_empty):
     interval = await monitor.get_interval()
     next_log = interval - last_log
     # Decide if there is enough time to read all the data
-    # before the next datapoint in logged.
+    # before the next datapoint is logged.
     print(f"Next data point will be logged in {next_log} seconds")
     if next_log < 10:
         print(f"Waiting {next_log} for next datapoint to be taken...")
@@ -1148,7 +1137,7 @@ async def _all_records(address, entry_filter, remove_empty):
 
     if begin < 0 or end < 0:
         # invalid range. Most likely no points available
-        return  Record(dev_name, dev_version, log_size, rec_filter)
+        return Record(dev_name, dev_version, log_size, rec_filter)
 
     # Read datapoint history from device
     if rec_filter.incl_temperature:
@@ -1221,7 +1210,7 @@ async def _all_records(address, entry_filter, remove_empty):
 
     for date, co2, temp, pres, hum, rad, rad_rate, rad_integral, radon in data:
         record.value.append(RecordItem(date, temp, hum, pres, co2, rad, rad_rate, rad_integral, radon))
-    if (remove_empty):
+    if remove_empty:
         record.value = record.value[begin-1:end+1]
     return record
 

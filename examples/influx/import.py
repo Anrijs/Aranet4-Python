@@ -1,8 +1,6 @@
-import aranet4
-import requests
-import time
 import datetime
 import sys
+
 from influxdb import InfluxDBClient
 
 def mkpt(device, key, value, timestr):
@@ -30,17 +28,17 @@ def main(argv):
     results = []
 
     device_name = argv[1]
-    with open(argv[0]) as f:
-        lines = f.readlines()
+    with open(file=argv[0], mode="r", encoding="utf-8") as file:
+        lines = file.readlines()
 
     for ln in lines:
         pt = ln.strip().split(";")
-        if (len(pt) < 5):
+        if len(pt) < 5:
             continue
 
         id = pt[0]
         timestr = pt[1] + ":00"
-        dt = datetime.datetime.strptime(timestr, '%Y-%m-%d %H:%M:%S')
+        dt = datetime.datetime.strptime(timestr, "%Y-%m-%d %H:%M:%S")
         dt = dt - datetime.timedelta(hours=1)
 
         t = float(pt[2])
@@ -50,7 +48,7 @@ def main(argv):
 
         res = {
             "id": id,
-            "time": dt.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            "time": dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "temperature": t,
             "pressure": p,
             "humidity": h,
@@ -60,7 +58,7 @@ def main(argv):
         results.append(res)
 
     client = InfluxDBClient("127.0.0.1", "8086", "root", "root", "aranet4")
-    client.create_database('aranet4')
+    client.create_database("aranet4")
 
     print("Sending history to InfluxDB...")
     pts = []
@@ -71,9 +69,9 @@ def main(argv):
         p = r["pressure"]
         h = r["humidity"]
         c = r["co2"]
-        i = r["id"]
+        #i = r["id"]
 
-        if (len(pts) > 10000): # flush
+        if len(pts) > 10000: # flush
             client.write_points(pts)
             pts = []
 
@@ -85,4 +83,4 @@ def main(argv):
     client.write_points(pts)
 
 if __name__== "__main__":
-  main(sys.argv[1:])
+    main(sys.argv[1:])
