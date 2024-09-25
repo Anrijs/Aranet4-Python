@@ -1,9 +1,9 @@
-import aranet4
-import requests
-import time
 import datetime
 import sys
+
 from influxdb import InfluxDBClient
+
+import aranet4
 
 def mkpt(device, key, value, timestr):
     return {
@@ -47,7 +47,7 @@ def main(argv):
     device_name = argv[1]
 
     client = InfluxDBClient("127.0.0.1", "8086", "root", "root", "aranet4")
-    client.create_database('aranet4')
+    client.create_database("aranet4")
 
     if hist:
         print("Fetching sensor history...")
@@ -75,14 +75,14 @@ def main(argv):
 
     print("Sending history to InfluxDB...")
     for r in results:
-        strtim = datetime.datetime.utcfromtimestamp(r["time"]).strftime('%Y-%m-%dT%H:%M:%SZ') # ISO 8601 UTC
+        strtim = datetime.datetime.utcfromtimestamp(r["time"]).strftime("%Y-%m-%dT%H:%M:%SZ") # ISO 8601 UTC
         t = r["temperature"]
         p = r["pressure"]
         h = r["humidity"]
         c = r["co2"]
-        i = r["id"]
+        #i = r["id"]
 
-        if (len(pts) > 2500): # flush
+        if len(pts) > 2500: # flush
             client.write_points(pts)
             pts = []
 
@@ -95,4 +95,4 @@ def main(argv):
 
 
 if __name__== "__main__":
-  main(sys.argv[1:])
+    main(sys.argv[1:])

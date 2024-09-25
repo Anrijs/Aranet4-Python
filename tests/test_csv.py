@@ -14,8 +14,8 @@ data_file = here.joinpath("data", "aranet4_readings.csv")
 def build_data():
     log_filter = client.Filter(1, 14, True, True, True, True, True, True, True, True)
     records = client.Record("mock_device", "v1234", 14, log_filter)
-    with open(data_file, mode="r") as csvfile:
-        reader = csv.DictReader(csvfile)
+    with open(file=data_file, mode="r", encoding="utf-8") as csv_file:
+        reader = csv.DictReader(csv_file)
         for row in reader:
             records.value.append(client.RecordItem(**row))
     return records
@@ -33,13 +33,12 @@ class CSVCreation(unittest.TestCase):
 
     def test_simple_write(self):
         aranetctl.write_csv(self.test_file.name, self.records)
-        ref = data_file.read_text().splitlines(keepends=False)
-        new = Path(self.test_file.name).read_text().splitlines(keepends=False)
+        ref = data_file.read_text(encoding="utf-8").splitlines(keepends=False)
+        new = Path(self.test_file.name).read_text(encoding="utf-8").splitlines(keepends=False)
         cmp_result = list(
             difflib.context_diff(ref, new, fromfile="reference", tofile="test output")
         )
         self.assertListEqual([], cmp_result)
-
 
 if __name__ == "__main__":
     unittest.main()

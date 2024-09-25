@@ -12,7 +12,7 @@ from aranet4 import client
 
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
-    parser.add_argument("device_mac", nargs='?', help="Aranet Bluetooth Address")
+    parser.add_argument("device_mac", nargs="?", help="Aranet Bluetooth Address")
     parser.add_argument(
         "--scan", action="store_true", help="Scan for Aranet devices"
     )
@@ -128,9 +128,9 @@ def print_records(records):
     print(f"{'Device Name':<15}: {records.name:>20}")
     print(f"{'Device Version':<15}: {records.version:>20}")
     print("-" * char_repeat)
-    print(f"{'id': ^4} | {'date': ^25} |", end=""),
+    print(f"{'id': ^4} | {'date': ^25} |", end="")
     if records.filter.incl_co2:
-        print(f" {'co2':^6} |", end=""),
+        print(f" {'co2':^6} |", end="")
     if records.filter.incl_temperature:
         print(" temp |", end="")
     if records.filter.incl_humidity:
@@ -144,7 +144,7 @@ def print_records(records):
     if records.filter.incl_rad_dose_total:
         print(" rad_total |", end="")
     if records.filter.incl_radon_concentration:
-        print(f" {'radon':^5} |", end=""),
+        print(f" {'radon':^5} |", end="")
     print("")
     print("-" * char_repeat)
 
@@ -183,7 +183,7 @@ def write_csv(filename, log_data):
     :param filename: file name
     :param log_data: `client.Record` data object
     """
-    with open(filename, "w", newline="") as csvfile:
+    with open(file=filename, mode="w", encoding="utf-8", newline="") as csv_file:
         fieldnames = ["date"]
         if log_data.filter.incl_co2:
             fieldnames.append("co2")
@@ -201,7 +201,7 @@ def write_csv(filename, log_data):
             fieldnames.append("rad_dose_total")
         if log_data.filter.incl_radon_concentration:
             fieldnames.append("radon_concentration")
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction="ignore")
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction="ignore")
 
         writer.writeheader()
 
@@ -218,10 +218,11 @@ def post_data(url, current):
     data = current.toDict()
     data["time"] = t.timestamp()
     r = requests.post(
-        url,
+        url=url,
         data=data,
+        timeout=300
     )
-    print("Pushing data: {:s}".format(r.text))
+    print(f"Pushing data: {r.text}")
 
 
 def wait_for_new_record(address):
@@ -242,7 +243,7 @@ def main(argv):
         devices = client.find_nearby(store_scan_result)
         print(f"Scan finished. Found {len(devices)}")
         print()
-        for addr, advertisement in found.items():
+        for _, advertisement in found.items():
             if advertisement.readings:
                 print(advertisement.readings.toString(advertisement))
             else:
@@ -270,13 +271,13 @@ def main(argv):
         settings = {}
 
         if args.set_interval:
-            settings['interval'] = args.set_interval
+            settings["interval"] = args.set_interval
 
         if args.set_integrations:
-            settings['integrations'] = args.set_integrations
+            settings["integrations"] = args.set_integrations
 
         if args.set_btrange:
-            settings['range'] = args.set_btrange
+            settings["range"] = args.set_btrange
 
         if settings:
             result = client.set_settings(args.device_mac, settings, True)

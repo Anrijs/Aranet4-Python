@@ -1,4 +1,5 @@
 import sys
+
 import aranet4
 
 scanned_devices = {}
@@ -48,7 +49,6 @@ def main(argv):
         print()
         advertisement = scanned_devices[addr]
         print_advertisement(advertisement)
-
 
 if __name__== "__main__":
     main(sys.argv[1:])
