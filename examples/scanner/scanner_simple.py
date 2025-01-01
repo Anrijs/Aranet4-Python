@@ -29,7 +29,7 @@ def print_advertisement(advertisement):
         readings = advertisement.readings
         print("---------------------------------------")
         print(f"  Type:           {readings.type} --> {readings.type.name}")
-        print(f"  Model:          {readings.type.manufacturer_name}")
+        print(f"  Model:          {readings.type.model}")
         print(f"  CO2:            {readings.co2} pm")
         print(f"  Temperature:    {readings.temperature:.01f} \u00b0C")
         print(f"  Humidity:       {readings.humidity} %")
