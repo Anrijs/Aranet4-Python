@@ -57,7 +57,7 @@ class AranetType(IntEnum):
     UNKNOWN = 255
 
     @property
-    def manufacturer_name(self):
+    def model(self):
         description = {
             AranetType.ARANET4: "Aranet4 HOME",
             AranetType.ARANET2: "Aranet2 HOME",
