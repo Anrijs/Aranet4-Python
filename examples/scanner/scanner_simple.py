@@ -13,6 +13,7 @@ def on_scan(advertisement):
 def print_advertisement(advertisement):
     print("=======================================")
     print(f"  Name:         {advertisement.device.name}")
+    print(f"  Model:        {advertisement.readings.type.model}")
     print(f"  Address:      {advertisement.device.address}")
 
     if advertisement.manufacturer_data:
@@ -28,8 +29,6 @@ def print_advertisement(advertisement):
     if advertisement.readings:
         readings = advertisement.readings
         print("---------------------------------------")
-        print(f"  Type:           {readings.type} --> {readings.type.name}")
-        print(f"  Model:          {readings.type.model}")
         print(f"  CO2:            {readings.co2} pm")
         print(f"  Temperature:    {readings.temperature:.01f} \u00b0C")
         print(f"  Humidity:       {readings.humidity} %")
