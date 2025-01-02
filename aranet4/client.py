@@ -59,8 +59,8 @@ class AranetType(IntEnum):
     @property
     def model(self):
         description = {
-            AranetType.ARANET4: "Aranet4 HOME",
-            AranetType.ARANET2: "Aranet2 HOME",
+            AranetType.ARANET4: "Aranet4",
+            AranetType.ARANET2: "Aranet2",
             AranetType.ARANET_RADIATION: "Aranet Radiation",
             AranetType.ARANET_RADON: "Aranet Radon Plus",
             AranetType.UNKNOWN: "Unknown Aranet Device"
