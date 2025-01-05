@@ -70,6 +70,7 @@ class DataManipulation(unittest.TestCase):
         self.assertEqual("v1.3.5", str(ad.manufacturer_data.version))
 
         self.assertEqual(AranetType.ARANET4, ad.readings.type)
+        self.assertEqual("Aranet4 HOME", ad.readings.type.model)
         self.assertEqual(1091, ad.readings.co2)
         self.assertEqual(20.8, ad.readings.temperature)
         self.assertEqual(53, ad.readings.humidity)
@@ -85,6 +86,7 @@ class DataManipulation(unittest.TestCase):
         self.assertEqual("v1.4.4", str(ad.manufacturer_data.version))
 
         self.assertEqual(AranetType.ARANET2, ad.readings.type)
+        self.assertEqual("Aranet2 HOME", ad.readings.type.model)
         self.assertEqual(20.5, ad.readings.temperature)
         self.assertEqual(52.2, ad.readings.humidity)
         self.assertEqual(59, ad.readings.battery)
@@ -98,6 +100,7 @@ class DataManipulation(unittest.TestCase):
         self.assertEqual("v1.4.38", str(ad.manufacturer_data.version))
 
         self.assertEqual(AranetType.ARANET_RADIATION, ad.readings.type)
+        self.assertEqual("Aranet Radiation", ad.readings.type.model)
         self.assertEqual(130, ad.readings.radiation_rate)
         self.assertEqual(13264, ad.readings.radiation_total)
         self.assertEqual(417900, ad.readings.radiation_duration)
@@ -112,6 +115,7 @@ class DataManipulation(unittest.TestCase):
         self.assertEqual("v1.6.4", str(ad.manufacturer_data.version))
 
         self.assertEqual(AranetType.ARANET_RADON, ad.readings.type)
+        self.assertEqual("Aranet Radon Plus", ad.readings.type.model)
         self.assertEqual(25.5, ad.readings.temperature)
         self.assertEqual(46.2, ad.readings.humidity)
         self.assertEqual(1018.5, ad.readings.pressure)

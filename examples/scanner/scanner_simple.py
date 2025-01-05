@@ -13,6 +13,7 @@ def on_scan(advertisement):
 def print_advertisement(advertisement):
     print("=======================================")
     print(f"  Name:         {advertisement.device.name}")
+    print(f"  Model:        {advertisement.readings.type.model}")
     print(f"  Address:      {advertisement.device.address}")
 
     if advertisement.manufacturer_data:

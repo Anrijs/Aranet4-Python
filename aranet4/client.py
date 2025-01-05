@@ -49,11 +49,23 @@ class Status(IntEnum):
 
 class AranetType(IntEnum):
     """Enum for the different Aranet devices"""
+    
     ARANET4 = 0
     ARANET2 = 1
     ARANET_RADIATION = 2
     ARANET_RADON = 3
     UNKNOWN = 255
+
+    @property
+    def model(self):
+        description = {
+            AranetType.ARANET4: "Aranet4",
+            AranetType.ARANET2: "Aranet2",
+            AranetType.ARANET_RADIATION: "Aranet Radiation",
+            AranetType.ARANET_RADON: "Aranet Radon Plus",
+            AranetType.UNKNOWN: "Unknown Aranet Device"
+        }
+        return description.get(self, "Unknown Aranet Device")
 
 @dataclass
 class Aranet4HistoryDelegate:
