@@ -40,7 +40,7 @@ TEST_DATA_ARANET_4 = {
 TEST_DATA_ARANET_2 = {
     "name": "Aranet2 278F8",
     "uuid": "f0cd1400-95da-4f4b-9ac8-aa55d312af0c",
-    "manufacturer_data": {1794: b"\x01!\x04\x04\x01\x00\x00\x00\x00\x00\x99\x01\x00\x00\n\x02\x00;\x00x\x00R\x00d"},
+    "manufacturer_data": {1794: b"\x01!\x04\x04\x01\x00\x00\x00\x00\x00\x99\x01\x00\x00\n\x02\x00;\x09x\x00R\x00d"},
     "manufacturer_data_no_integrations": {1794: b"\x01\x01\x04\x04\x01\x00\x00\x00\x00\x00\x99\x01\x00\x00\n\x02\x00;\x00x\x00R\x00d"}
 }
 
@@ -91,7 +91,8 @@ class DataManipulation(unittest.TestCase):
         self.assertEqual(52.2, ad.readings.humidity)
         self.assertEqual(59, ad.readings.battery)
         self.assertEqual(82, ad.readings.ago)
-        self.assertEqual(120, ad.readings.interval)
+        self.assertEqual("OVER", ad.readings.status_temperature.name)
+        self.assertEqual("UNDER", ad.readings.status_humidity.name)
 
     def _test_aranet_radiation(self, data):
         ad = Aranet4Advertisement(data["device"], data["ad_data"])
