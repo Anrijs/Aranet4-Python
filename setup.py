@@ -5,7 +5,7 @@ with open(file="README.md", mode="r", encoding="utf-8") as file:
 
 setuptools.setup(
     name="aranet4",
-    version="2.5.0",
+    version="2.5.1",
     description="Aranet Python client",
     long_description=long_description,
     long_description_content_type="text/markdown",
