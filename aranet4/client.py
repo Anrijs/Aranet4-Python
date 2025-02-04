@@ -258,14 +258,14 @@ class CurrentReading:
             self.humidity = self._set(Param.HUMIDITY2, value[5])
             self.battery = value[3]
             self.status_humidity = Status(value[6] & 0b0011)
-            self.status_temperature = Status(value[6] & 0b1100)
+            self.status_temperature = Status((value[6] & 0b1100) >> 2)
             self.interval = value[1]
             self.ago = value[2]
         else:
             self.temperature = self._set(Param.TEMPERATURE, value[1])
             self.humidity = self._set(Param.HUMIDITY2, value[3])
             self.status_humidity = Status(value[6] & 0b0011)
-            self.status_temperature = Status(value[6] & 0b1100)
+            self.status_temperature = Status((value[6] & 0b1100) >> 2)
             self.battery = value[5]
             self.interval = value[7]
             self.ago = value[8]
