@@ -1,7 +1,6 @@
 import unittest
 
 from bleak.backends.scanner import AdvertisementData
-from bleak.backends.device import BLEDevice
 from bleak import BleakClient
 
 from aranet4.client import Aranet4Advertisement
@@ -20,13 +19,8 @@ def fake_ad_data(name, service_uuid, manufacturer_data, address="00:11:22:33:44:
         platform_data=()
     )
 
-    # device = BleakClient(address)
-    #$ device.name = name
-    device = BLEDevice(
-        address=address,
-        name=name,
-        details={},
-    )
+    device = BleakClient(address)
+    device.name = name
 
     return {
         "ad_data": ad_data,

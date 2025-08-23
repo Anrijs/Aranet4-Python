@@ -18,7 +18,7 @@ setuptools.setup(
         "Operating System :: OS Independent"
     ],
     install_requires=[
-        "bleak==1.1.0",
+        "bleak==0.22.3",
         "requests"
     ],
     entry_points={
