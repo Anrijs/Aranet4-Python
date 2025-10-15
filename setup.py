@@ -5,7 +5,7 @@ with open(file="README.md", mode="r", encoding="utf-8") as file:
 
 setuptools.setup(
     name="aranet4",
-    version="2.5.1",
+    version="2.5.2",
     description="Aranet Python client",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -18,7 +18,7 @@ setuptools.setup(
         "Operating System :: OS Independent"
     ],
     install_requires=[
-        "bleak",
+        "bleak==0.22.3",
         "requests"
     ],
     entry_points={
