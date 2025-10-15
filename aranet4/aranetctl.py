@@ -4,25 +4,40 @@ from dataclasses import asdict
 import datetime
 from pathlib import Path
 import sys
-from time import sleep
-
 import requests
+from time import sleep
 
 from aranet4 import client
 
+
 def parse_args(ctl_args):
     parser = argparse.ArgumentParser()
-    parser.add_argument("device_mac", nargs="?", help="Aranet Bluetooth Address")
     parser.add_argument(
-        "--scan", action="store_true", help="Scan for Aranet devices"
+        "device_mac",
+        nargs="?",
+        help="Aranet Bluetooth Address"
     )
+    parser.add_argument(
+        "--scan",
+        action="store_true",
+        help="Scan for Aranet devices"
+    )
+
     current = parser.add_argument_group("Options for current reading")
     current.add_argument(
-        "-u", "--url", metavar="URL", help="Remote url for current value push"
+        "-u",
+        "--url",
+        metavar="URL",
+        help="Remote url for current value push"
     )
+
     parser.add_argument(
-        "-r", "--records", action="store_true", help="Fetch historical log records"
+        "-r",
+        "--records",
+        action="store_true",
+        help="Fetch historical log records"
     )
+
     history = parser.add_argument_group("Filter History Log Records")
     history.add_argument(
         "-s",
@@ -39,7 +54,11 @@ def parse_args(ctl_args):
         help="Records range end (UTC time, example: 2019-09-30T14:00:00",
     )
     history.add_argument(
-        "-o", "--output", metavar="FILE", type=Path, help="Save records to a file"
+        "-o",
+        "--output",
+        metavar="FILE",
+        type=Path,
+        help="Save records to a file"
     )
     history.add_argument(
         "-w",
@@ -49,7 +68,11 @@ def parse_args(ctl_args):
         help="Wait until new data point available",
     )
     history.add_argument(
-        "-l", "--last", metavar="COUNT", type=int, help="Get <COUNT> last records"
+        "-l",
+        "--last",
+        metavar="COUNT",
+        type=int,
+        help="Get <COUNT> last records"
     )
     history.add_argument(
         "--xt",
@@ -148,7 +171,9 @@ def print_records(records):
     print("")
     print("-" * char_repeat)
 
-    for record_id, line in enumerate(records.value, start=records.filter.begin):
+    for record_id, line in enumerate(
+        records.value, start=records.filter.begin
+    ):
         print(f"{record_id:>4d} | {line.date.isoformat()} |", end="")
         if records.filter.incl_co2:
             print(f" {line.co2:>6d} |", end="")
@@ -170,12 +195,12 @@ def print_records(records):
     print("-" * char_repeat)
 
 
-def store_scan_result(advertisement):
-    global found
+def store_scan_result(found, advertisement):
     if not advertisement.device:
         return
 
     found[advertisement.device.address] = advertisement
+
 
 def write_csv(filename, log_data):
     """
@@ -183,7 +208,9 @@ def write_csv(filename, log_data):
     :param filename: file name
     :param log_data: `client.Record` data object
     """
-    with open(file=filename, mode="w", encoding="utf-8", newline="") as csv_file:
+    with open(
+        file=filename, mode="w", encoding="utf-8", newline=""
+    ) as csv_file:
         fieldnames = ["date"]
         if log_data.filter.incl_co2:
             fieldnames.append("co2")
@@ -201,7 +228,9 @@ def write_csv(filename, log_data):
             fieldnames.append("rad_dose_total")
         if log_data.filter.incl_radon_concentration:
             fieldnames.append("radon_concentration")
-        writer = csv.DictWriter(csv_file, fieldnames=fieldnames, extrasaction="ignore")
+        writer = csv.DictWriter(
+            csv_file, fieldnames=fieldnames, extrasaction="ignore"
+        )
 
         writer.writeheader()
 
@@ -234,13 +263,12 @@ def wait_for_new_record(address):
 
 
 def main(argv):
-    global found
     found = {}
     args = parse_args(argv)
 
     if args.scan:
         print("Looking for Aranet devices...")
-        devices = client.find_nearby(store_scan_result)
+        devices = client.find_nearby(lambda ad: store_scan_result(found, ad))
         print(f"Scan finished. Found {len(devices)}")
         print()
         for _, advertisement in found.items():

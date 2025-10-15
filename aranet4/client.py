@@ -31,6 +31,7 @@ class Param(IntEnum):
     RADIATION_DOSE_INTEGRAL = 9
     RADON_CONCENTRATION = 10
 
+
 class Color(IntEnum):
     """Enum for the different status colors"""
 
@@ -38,6 +39,7 @@ class Color(IntEnum):
     GREEN = 1
     YELLOW = 2
     RED = 3
+
 
 class Status(IntEnum):
     """Enum for the different status alerts"""
@@ -47,9 +49,10 @@ class Status(IntEnum):
     OVER = 2
     DASH = 3
 
+
 class AranetType(IntEnum):
     """Enum for the different Aranet devices"""
-    
+
     ARANET4 = 0
     ARANET2 = 1
     ARANET_RADIATION = 2
@@ -66,6 +69,7 @@ class AranetType(IntEnum):
             AranetType.UNKNOWN: "Unknown Aranet Device"
         }
         return description.get(self, "Unknown Aranet Device")
+
 
 @dataclass
 class Aranet4HistoryDelegate:
@@ -132,7 +136,7 @@ class CurrentReading:
     # Aranet Radon
     radon_concentration: int = -1
     radon_concentration_avg_24h: int = -1
-    radon_concentration_avg_7d:  int = -1
+    radon_concentration_avg_7d: int = -1
     radon_concentration_avg_30d: int = -1
 
     battery: int = -1
@@ -183,8 +187,8 @@ class CurrentReading:
             if d > 0:
                 dose_duration = str(d) + "d " + dose_duration
 
-            ret += f"  Dose rate:      {self.radiation_rate/1000:.02f} uSv/h\n"
-            ret += f"  Dose total:     {self.radiation_total/1000000:.04f} mSv/{dose_duration}\n"
+            ret += f"  Dose rate:      {self.radiation_rate / 1000:.02f} uSv/h\n"
+            ret += f"  Dose total:     {self.radiation_total / 1000000:.04f} mSv/{dose_duration}\n"
             ret += f"  Battery:        {self.battery} %\n"
             ret += f"  Age:            {self.ago}/{self.interval} s\n"
         elif self.type == AranetType.ARANET_RADON:
@@ -301,7 +305,7 @@ class CurrentReading:
             self.radon_concentration = self._set(Param.RADON_CONCENTRATION, value[7])
             self.status = Color(value[8])
             self.radon_concentration_avg_24h = self._parse_avg_radon(value[9], value[10])["value"]
-            self.radon_concentration_avg_7d  = self._parse_avg_radon(value[11], value[12])["value"]
+            self.radon_concentration_avg_7d = self._parse_avg_radon(value[11], value[12])["value"]
             self.radon_concentration_avg_30d = self._parse_avg_radon(value[13], value[14])["value"]
         else:
             self.radon_concentration = self._set(Param.RADON_CONCENTRATION, value[0])
@@ -328,7 +332,7 @@ class CurrentReading:
             "time": time,
             "value": value,
             "progress": progress
-    }
+        }
 
     @staticmethod
     def _set(param: Param, value: int):
@@ -356,19 +360,19 @@ class CurrentReading:
             multiplier = 0.1
         elif param == Param.RADIATION_DOSE:
             invalid_reading_flag = value >> 15 == 1
-            multiplier = 1 # nSv
+            multiplier = 1  # nSv
         elif param == Param.RADIATION_DOSE_RATE:
             invalid_reading_flag = value >> 15 == 1
-            multiplier = 10 # nSv/h
+            multiplier = 10  # nSv/h
         elif param == Param.RADIATION_DOSE_INTEGRAL:
             invalid_reading_flag = value >> 63 == 1
-            multiplier = 1 # nSv
+            multiplier = 1  # nSv
         elif param == Param.RADON_CONCENTRATION:
             # 0x1f00 general error
             # 0x1f01 no data
             # 0x1f02 Hi humidity in sensor chamber
             invalid_reading_flag = value >= 0x1f00
-            multiplier = 1 # Bq/m3
+            multiplier = 1  # Bq/m3
 
         if invalid_reading_flag:
             return -1
@@ -405,7 +409,7 @@ class ManufacturerData:
     """dataclass to store manufacturer data"""
 
     disconnected: bool = False
-    calibration_state: CalibrationState  = -1
+    calibration_state: CalibrationState = -1
     dfu_active: bool = False
     integrations: bool = False
     version: Version = None
@@ -433,7 +437,7 @@ class Aranet4Advertisement:
     manufacturer_data: ManufacturerData = None
     rssi: int = None
 
-    def __init__(self, device = None, ad_data = None):
+    def __init__(self, device=None, ad_data=None):
         self.device = device
 
         if device and ad_data:
@@ -450,10 +454,10 @@ class Aranet4Advertisement:
                 # Passive scan may return result with no name.
                 valid_name = device.name and device.name.startswith(("Aranet4", "Aranet2", "Aranet\u2622", "AranetRn"))
                 cond_name = valid_name and device.name.startswith("Aranet4")
-                cond_len = not valid_name and len(raw_bytes) in [7,22]
+                cond_len = not valid_name and len(raw_bytes) in [7, 22]
 
-                if cond_name or cond_len: # Should be Aranet4
-                    raw_bytes.insert(0,0)
+                if cond_name or cond_len:  # Should be Aranet4
+                    raw_bytes.insert(0, 0)
 
                 # Basic info
                 value_fmt = "<BBBB"
@@ -467,16 +471,16 @@ class Aranet4Advertisement:
                 # Extended info / measurements
                 aranetv = raw_bytes[0]
 
-                if aranetv == 0: # Aranet4
+                if aranetv == 0:  # Aranet4
                     value_fmt = "<xxxxxxxxxHHHBBBHH"
                     aranetv = AranetType.ARANET4
-                elif aranetv == 1: # Aranet2
+                elif aranetv == 1:  # Aranet2
                     value_fmt = "<xxxxxxxxHHHHBBBHHB"
                     aranetv = AranetType.ARANET2
-                elif aranetv == 2: # Aranet Radiation
+                elif aranetv == 2:  # Aranet Radiation
                     value_fmt = "<xxxxxxIIHBBBHHB"
                     aranetv = AranetType.ARANET_RADIATION
-                elif aranetv == 3: # Aranet Radon
+                elif aranetv == 3:  # Aranet Radon
                     value_fmt = "<xxxxxxxxHHHHBBBHHB"
                     aranetv = AranetType.ARANET_RADON
                 else:
@@ -532,6 +536,7 @@ class Record:
     filter: Filter
     value: List[RecordItem] = field(default_factory=list)
 
+
 @dataclass
 class SensorState:
     """dataclass to store sensor state values"""
@@ -553,10 +558,10 @@ class SensorState:
     isOpenForIntegration: bool = False
 
     def decode(self, t):
-        isAranet2 = t[0] == 0xF2 # Aranet2
-        isAranet4 = t[0] == 0xF1 # Aranet4
-        isNucleo  = t[0] == 0xF4 # Aranet Radiation
-        isRadon   = t[0] == 0xF3 # Aranet Radon
+        isAranet2 = t[0] == 0xF2  # Aranet2
+        isAranet4 = t[0] == 0xF1  # Aranet4
+        isNucleo = t[0] == 0xF4  # Aranet Radiation
+        isRadon = t[0] == 0xF3  # Aranet Radon
         c = format(ord(chr(t[1])), "08b")[::-1]
         o = format(ord(chr(t[2])), "08b")[::-1]
 
@@ -644,7 +649,7 @@ class Aranet4:
     # Device Information Service
     SERVICE_DIS = normalize_uuid_16(0x180a)
 
-    # Device Information Service Characteristics 
+    # Device Information Service Characteristics
     CHARACTERISTIC_SYSTEM_ID = normalize_uuid_16(0x2a23)
     CHARACTERISTIC_MODEL_NUMBER = normalize_uuid_16(0x2a24)
     CHARACTERISTIC_SERIAL_NO = normalize_uuid_16(0x2a25)
@@ -660,15 +665,15 @@ class Aranet4:
     CHARACTERISTIC_BATTERY_LEVEL = normalize_uuid_16(0x2a19)
 
     # SAF Tehnika Service
-    SERVICE_SAF_TEHNIKA = normalize_uuid_16(0xfce0) # v1.2.0 and later
-    SERVICE_SAF_TEHNIKA_OLD = "f0cd1400-95da-4f4b-9ac8-aa55d312af0c" # until v1.2.0
+    SERVICE_SAF_TEHNIKA = normalize_uuid_16(0xfce0)  # v1.2.0 and later
+    SERVICE_SAF_TEHNIKA_OLD = "f0cd1400-95da-4f4b-9ac8-aa55d312af0c"  # until v1.2.0
 
     # SAF Tehnika Service Characteristics (Aranet2 has different readings characteristic uuids)
     CHARACTERISTIC_SENSOR_STATE = "f0cd1401-95da-4f4b-9ac8-aa55d312af0c"
     CHARACTERISTIC_CMD = "f0cd1402-95da-4f4b-9ac8-aa55d312af0c"
     CHARACTERISTIC_CALIBRATION_DATA = "f0cd1502-95da-4f4b-9ac8-aa55d312af0c"
     CHARACTERISTIC_CURRENT_READINGS = "f0cd1503-95da-4f4b-9ac8-aa55d312af0c"
-    CHARACTERISTIC_CURRENT_READINGS_AR2 = "f0cd1504-95da-4f4b-9ac8-aa55d312af0c" # Aranet2 Only
+    CHARACTERISTIC_CURRENT_READINGS_AR2 = "f0cd1504-95da-4f4b-9ac8-aa55d312af0c"  # Aranet2 Only
     CHARACTERISTIC_TOTAL_READINGS = "f0cd2001-95da-4f4b-9ac8-aa55d312af0c"
     CHARACTERISTIC_INTERVAL = "f0cd2002-95da-4f4b-9ac8-aa55d312af0c"
     CHARACTERISTIC_HISTORY_READINGS_V1 = "f0cd2003-95da-4f4b-9ac8-aa55d312af0c"
@@ -676,16 +681,16 @@ class Aranet4:
     CHARACTERISTIC_HISTORY_READINGS_V2 = "f0cd2005-95da-4f4b-9ac8-aa55d312af0c"
     CHARACTERISTIC_CURRENT_READINGS_DET = "f0cd3001-95da-4f4b-9ac8-aa55d312af0c"
     CHARACTERISTIC_CURRENT_READINGS_A = "f0cd3002-95da-4f4b-9ac8-aa55d312af0c"
-    CHARACTERISTIC_CURRENT_READINGS_A_AR2 = "f0cd3003-95da-4f4b-9ac8-aa55d312af0c" # Aranet2 Only
+    CHARACTERISTIC_CURRENT_READINGS_A_AR2 = "f0cd3003-95da-4f4b-9ac8-aa55d312af0c"  # Aranet2 Only
 
     # Nordic Semiconductor ASA Service
     SERVICE_NORDIC_SEMICONDUCTOR = normalize_uuid_16(0xfe59)
-    
+
     # Nordic Semiconductor ASA Service Characteristics
     CHARACTERISTIC_SECURE_DFU = "8ec90003-f315-4f60-9fb8-838830daea50"
 
     # Regexp
-    REGEX_MAC  = "([0-9a-f]{2}[:-]){5}([0-9a-f]{2})"
+    REGEX_MAC = "([0-9a-f]{2}[:-]){5}([0-9a-f]{2})"
     REGEX_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
     REGEX_ADDR = f"({REGEX_MAC})|({REGEX_UUID})"
 
@@ -761,7 +766,7 @@ class Aranet4:
         try:
             raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_DEVICE_NAME)
             return raw_bytes.decode("utf-8")
-        except:
+        except Exception:
             # fallback to serial number
             raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_SERIAL_NO)
             return "Aranet4 {}".format(raw_bytes.decode("utf-8"))
@@ -908,7 +913,7 @@ class Aranet4:
         await self.device.stop_notify(self.CHARACTERISTIC_HISTORY_READINGS_V1)
         return delegate.result
 
-    async def set_readings_interval(self, interval: int, verify: bool=True):
+    async def set_readings_interval(self, interval: int, verify: bool = True):
         """Set reading interval"""
         header = 0x90
         val = struct.pack("<BB", header, interval)
@@ -918,7 +923,7 @@ class Aranet4:
             return interval == (iv / 60)
         return True
 
-    async def set_home_integration_enabled(self, enabled: bool, verify: bool=True):
+    async def set_home_integration_enabled(self, enabled: bool, verify: bool = True):
         """
         Toggle smart home integrations.
         This is required to receive measurements in advertisements.
@@ -931,7 +936,7 @@ class Aranet4:
             return enabled == state.isOpenForIntegration
         return True
 
-    async def set_bluetooth_range(self, extended: bool, verify: bool=True):
+    async def set_bluetooth_range(self, extended: bool, verify: bool = True):
         """Set bluetooth range"""
         header = 0x92
         val = struct.pack("<BB", header, 1 if extended else 0)
@@ -991,7 +996,7 @@ def _calc_start_end(datapoint_times: int, entry_filter):
         if 0 < time_start <= end:
             start = time_start
         else:
-            start = -1 # out of range
+            start = -1  # out of range
     if filter_end:
         time_end = -1
         for idx, timestamp in enumerate(datapoint_times, start=1):
@@ -1002,7 +1007,7 @@ def _calc_start_end(datapoint_times: int, entry_filter):
         if start <= time_end <= end:
             end = time_end
         else:
-            end = -1 # out of range
+            end = -1  # out of range
     return start, end
 
 
@@ -1016,13 +1021,15 @@ async def _current_reading(address):
     readings.stored = await monitor.get_total_readings()
     return readings
 
+
 def _eval(val) -> bool:
     falsy = ["0", "false", "disable", "disabled", "no", "off", "none"]
     if isinstance(val, str):
         return val.lower() not in falsy
     return bool(val)
 
-async def _set_settings(address, settings, verify: bool=True) -> dict:
+
+async def _set_settings(address, settings, verify: bool = True) -> dict:
     """Change device settings. Returns changed count"""
     monitor = Aranet4(address=address)
     await monitor.connect()
@@ -1044,11 +1051,13 @@ async def _set_settings(address, settings, verify: bool=True) -> dict:
 
     return status
 
+
 def get_current_readings(mac_address: str) -> CurrentReading:
     """Get from the device the current measurements"""
     return asyncio.run(_current_reading(mac_address))
 
-def set_settings(mac_address: str, settings: dict, verify: bool=True) -> int:
+
+def set_settings(mac_address: str, settings: dict, verify: bool = True) -> int:
     """Get from the device the current measurements"""
     return asyncio.run(_set_settings(mac_address, settings, verify))
 
@@ -1075,6 +1084,7 @@ class Aranet4Scanner:
     async def stop(self):
         await self.scanner.stop()
 
+
 async def _find_nearby(detect_callback: callable, duration: int) -> List[BLEDevice]:
     scanner = Aranet4Scanner(detect_callback)
     await scanner.start()
@@ -1092,6 +1102,7 @@ def find_nearby(detect_callback: callable, duration: int = 5) -> List[BLEDevice]
     """
 
     return asyncio.run(_find_nearby(detect_callback, duration))
+
 
 async def _all_records(address, entry_filter, remove_empty):
     """
@@ -1129,7 +1140,7 @@ async def _all_records(address, entry_filter, remove_empty):
         entry_filter["pres"] = False
         entry_filter["co2"] = False
         if entry_filter.get("humi", False):
-            entry_filter["humi"] = 2 #v2 humidity
+            entry_filter["humi"] = 2  # v2 humidity
     elif dev_name.startswith("Aranet\u2622"):
         entry_filter["pres"] = False
         entry_filter["co2"] = False
@@ -1144,7 +1155,7 @@ async def _all_records(address, entry_filter, remove_empty):
         entry_filter["pres"] = entry_filter.get("pres", True)
         entry_filter["temp"] = entry_filter.get("temp", True)
         if entry_filter.get("humi", False):
-            entry_filter["humi"] = 2 #v2 humidity
+            entry_filter["humi"] = 2  # v2 humidity
 
     log_size = await monitor.get_total_readings()
     log_points = _log_times(now, log_size, interval, last_log)
@@ -1238,7 +1249,7 @@ async def _all_records(address, entry_filter, remove_empty):
     for date, co2, temp, pres, hum, rad, rad_rate, rad_integral, radon in data:
         record.value.append(RecordItem(date, temp, hum, pres, co2, rad, rad_rate, rad_integral, radon))
     if remove_empty:
-        record.value = record.value[begin-1:end+1]
+        record.value = record.value[begin - 1:end + 1]
     return record
 
 
