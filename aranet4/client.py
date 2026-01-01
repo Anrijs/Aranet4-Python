@@ -744,7 +744,7 @@ class Aranet4:
         else:
             if details:
                 uuid = self.CHARACTERISTIC_CURRENT_READINGS_DET
-                # co2, temp, pressure, humidity, battery, status, , interval, ago
+                # co2, temp, pressure, humidity, battery, status, interval, ago
                 value_fmt = "<HHHBBBHH"
             else:
                 uuid = self.CHARACTERISTIC_CURRENT_READINGS
