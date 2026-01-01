@@ -744,11 +744,11 @@ class Aranet4:
         else:
             if details:
                 uuid = self.CHARACTERISTIC_CURRENT_READINGS_DET
-                # co2, temp, pressure, humidity, battery, status
+                # co2, temp, pressure, humidity, battery, status, , interval, ago
                 value_fmt = "<HHHBBBHH"
             else:
                 uuid = self.CHARACTERISTIC_CURRENT_READINGS
-                # co2, temp, pressure, humidity, battery, status, interval, ^
+                # co2, temp, pressure, humidity, battery, status
                 value_fmt = "<HHHBBB"
 
             raw_bytes = await self.device.read_gatt_char(uuid)
