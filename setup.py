@@ -11,7 +11,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/Anrijs/Aranet4-Python",
     packages=setuptools.find_packages(),
-    python_requires=">=3.9",
+    python_requires=">=3.10",
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
