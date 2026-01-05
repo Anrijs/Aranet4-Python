@@ -1122,6 +1122,7 @@ async def _all_records(address, entry_filter, remove_empty):
     # Get Basic information
     dev_name = await monitor.get_name()
     dev_version = await monitor.get_version()
+    sensor_state = await monitor.get_sensor_state()
     last_log = await monitor.get_seconds_since_update()
     now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
     interval = await monitor.get_interval()
@@ -1149,7 +1150,7 @@ async def _all_records(address, entry_filter, remove_empty):
         entry_filter["rad_dose"] = entry_filter.get("rad_dose", True)
         entry_filter["rad_dose_rate"] = entry_filter.get("rad_dose_rate", True)
         entry_filter["rad_dose_total"] = entry_filter.get("rad_dose_total", True)
-    elif dev_name.startswith("AranetRn"):
+    elif dev_name.startswith("AranetRn") or sensor_state.type == AranetType.ARANET_RADON:
         entry_filter["co2"] = False
         entry_filter["radon_concentration"] = entry_filter.get("radon_concentration", True)
         entry_filter["pres"] = entry_filter.get("pres", True)
