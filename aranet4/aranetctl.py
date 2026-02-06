@@ -195,11 +195,22 @@ def print_records(records):
     print("-" * char_repeat)
 
 
-def store_scan_result(found, advertisement):
+def store_and_print_scan_result(found, advertisement):
     if not advertisement.device:
         return
 
+    if advertisement.device.address in found:
+        return
+    
     found[advertisement.device.address] = advertisement
+    if advertisement.readings:
+        print(advertisement.readings.toString(advertisement))
+    else:
+        print("=======================================")
+        print(f"  Name:     {advertisement.device.name}")
+        print(f"  Address:  {advertisement.device.address}")
+        print(f"  RSSI:     {advertisement.rssi} dBm")
+        print()
 
 
 def write_csv(filename, log_data):
@@ -268,20 +279,8 @@ def main(argv):
 
     if args.scan:
         print("Looking for Aranet devices...")
-        devices = client.find_nearby(lambda ad: store_scan_result(found, ad))
+        devices = client.find_nearby(lambda ad: store_and_print_scan_result(found, ad))
         print(f"Scan finished. Found {len(devices)}")
-        print()
-        for _, advertisement in found.items():
-            if advertisement.readings:
-                print(advertisement.readings.toString(advertisement))
-            else:
-                print("=======================================")
-                print(f"  Name:     {advertisement.device.name}")
-                print(f"  Address:  {advertisement.device.address}")
-                print(f"  RSSI:     {advertisement.rssi} dBm")
-                print()
-            print()
-
         return
 
     if not args.device_mac:

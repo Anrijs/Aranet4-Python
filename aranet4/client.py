@@ -1095,7 +1095,7 @@ async def _find_nearby(detect_callback: callable, duration: int) -> List[BLEDevi
             if "Aranet" in device.name]
 
 
-def find_nearby(detect_callback: callable, duration: int = 5) -> List[BLEDevice]:
+def find_nearby(detect_callback: callable, duration: int = 8) -> List[BLEDevice]:
     """
     Scans for nearby Aranet4 devices.
     Will call callback on every valid Aranet4 advertisement, including duplicates
