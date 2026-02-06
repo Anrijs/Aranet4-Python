@@ -713,7 +713,11 @@ class Aranet4:
     def __del__(self):
         """Close remote"""
         if self.device.is_connected:
-            asyncio.shield(self.device.disconnect())
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                return
+            loop.create_task(self.device.disconnect())
 
     async def connect(self):
         """Connect to remote device"""

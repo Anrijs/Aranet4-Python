@@ -7,6 +7,7 @@ import sys
 import requests
 from time import sleep
 
+from bleak.exc import BleakDeviceNotFoundError
 from aranet4 import client
 
 
@@ -287,36 +288,39 @@ def main(argv):
         print("Device address not specified")
         return
 
-    if args.records:
-        if args.wait:
-            wait_for_new_record(args.device_mac)
-        records = client.get_all_records(args.device_mac, vars(args), True)
-        print_records(records)
-        if args.output:
-            write_csv(args.output, records)
-    else:
-        settings = {}
-
-        if args.set_interval:
-            settings["interval"] = args.set_interval
-
-        if args.set_integrations:
-            settings["integrations"] = args.set_integrations
-
-        if args.set_btrange:
-            settings["range"] = args.set_btrange
-
-        if settings:
-            result = client.set_settings(args.device_mac, settings, True)
-            for k in result:
-                val = settings[k]
-                ret = "SUCCESS" if result[k] else "FAILED"
-                print(f"Set {k} to \"{val}\": {ret}")
+    try:
+        if args.records:
+            if args.wait:
+                wait_for_new_record(args.device_mac)
+            records = client.get_all_records(args.device_mac, vars(args), True)
+            print_records(records)
+            if args.output:
+                write_csv(args.output, records)
         else:
-            current = client.get_current_readings(args.device_mac)
-            print(current.toString())
-            if args.url:
-                post_data(args.url, current)
+            settings = {}
+
+            if args.set_interval:
+                settings["interval"] = args.set_interval
+
+            if args.set_integrations:
+                settings["integrations"] = args.set_integrations
+
+            if args.set_btrange:
+                settings["range"] = args.set_btrange
+
+            if settings:
+                result = client.set_settings(args.device_mac, settings, True)
+                for k in result:
+                    val = settings[k]
+                    ret = "SUCCESS" if result[k] else "FAILED"
+                    print(f"Set {k} to \"{val}\": {ret}")
+            else:
+                current = client.get_current_readings(args.device_mac)
+                print(current.toString())
+                if args.url:
+                    post_data(args.url, current)
+    except (client.Aranet4Error, BleakDeviceNotFoundError) as e:
+        print(e)
 
 
 def entry_point():
