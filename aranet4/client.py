@@ -65,7 +65,7 @@ class AranetType(IntEnum):
             AranetType.ARANET4: "Aranet4",
             AranetType.ARANET2: "Aranet2",
             AranetType.ARANET_RADIATION: "Aranet Radiation",
-            AranetType.ARANET_RADON: "Aranet Radon Plus",
+            AranetType.ARANET_RADON: "Aranet Radon",
             AranetType.UNKNOWN: "Unknown Aranet Device"
         }
         return description.get(self, "Unknown Aranet Device")
@@ -193,13 +193,14 @@ class CurrentReading:
             ret += f"  Age:            {self.ago}/{self.interval} s\n"
         elif self.type == AranetType.ARANET_RADON:
             ret += f"  Radon Conc.:    {self.radon_concentration} Bq/m3\n"
-            ret += f"  Temperature:    {self.temperature:.01f} \u00b0C\n"
-            ret += f"  Humidity:       {self.humidity} %\n"
+            if self.name.startswith("AranetRn+") or self.temperature != 0:
+                ret += f"  Temperature:    {self.temperature:.01f} \u00b0C\n"
+            if self.name.startswith("AranetRn+") or self.humidity != 0:
+                ret += f"  Humidity:       {self.humidity} %\n"
             ret += f"  Pressure:       {self.pressure:.01f} hPa\n"
             ret += f"  Battery:        {self.battery} %\n"
             ret += f"  Status Display: {self.status.name}\n"
             ret += f"  Age:            {self.ago}/{self.interval} s\n"
-
         else:
             ret += "  Unknown device type\n"
 
@@ -223,6 +224,13 @@ class CurrentReading:
             data["radiation_rate"] = self.radiation_rate
             data["radiation_total"] = self.radiation_total
             data["radiation_duration"] = self.radiation_duration
+        elif self.type == AranetType.ARANET_RADON:
+            data["radon_concentration"] = self.radon_concentration
+            if self.name.startswith("AranetRn+") or self.temperature != 0:
+                data["temperature"] = self.temperature
+            if self.name.startswith("AranetRn+") or self.humidity != 0:
+                data["humidity"] = self.humidity
+            data["pressure"] = self.pressure    
 
         return data
 
@@ -1138,6 +1146,8 @@ async def _all_records(address, entry_filter, remove_empty):
         last_log = await monitor.get_seconds_since_update()
         now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
 
+    unknwon_model = False
+
     if dev_name.startswith("Aranet2"):
         entry_filter["pres"] = False
         entry_filter["co2"] = False
@@ -1151,13 +1161,16 @@ async def _all_records(address, entry_filter, remove_empty):
         entry_filter["rad_dose"] = entry_filter.get("rad_dose", True)
         entry_filter["rad_dose_rate"] = entry_filter.get("rad_dose_rate", True)
         entry_filter["rad_dose_total"] = entry_filter.get("rad_dose_total", True)
-    elif dev_name.startswith("AranetRn") or sensor_state.type == AranetType.ARANET_RADON:
+    elif dev_name.startswith("AranetRn"):
         entry_filter["co2"] = False
         entry_filter["radon_concentration"] = entry_filter.get("radon_concentration", True)
         entry_filter["pres"] = entry_filter.get("pres", True)
-        entry_filter["temp"] = entry_filter.get("temp", True)
-        if entry_filter.get("humi", False):
-            entry_filter["humi"] = 2  # v2 humidity
+        if dev_name.startswith("AranetRn+"):
+            entry_filter["temp"] = entry_filter.get("temp", True)
+            if entry_filter.get("humi", False):
+                entry_filter["humi"] = 2  # v2 humidity
+    else:
+        unknwon_model = True
 
     log_size = await monitor.get_total_readings()
     log_points = _log_times(now, log_size, interval, last_log)
@@ -1175,8 +1188,8 @@ async def _all_records(address, entry_filter, remove_empty):
         entry_filter.get("radon_concentration", False),
     )
 
-    if begin < 0 or end < 0:
-        # invalid range. Most likely no points available
+    if begin < 0 or end < 0 or unknwon_model:
+        # Invalid model or invalid range. Most likely no points available
         return Record(dev_name, dev_version, log_size, rec_filter)
 
     # Read datapoint history from device
