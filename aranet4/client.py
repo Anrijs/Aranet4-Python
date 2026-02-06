@@ -767,9 +767,10 @@ class Aranet4:
             raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_DEVICE_NAME)
             return raw_bytes.decode("utf-8")
         except Exception:
-            # fallback to serial number
-            raw_bytes = await self.device.read_gatt_char(self.CHARACTERISTIC_SERIAL_NO)
-            return "Aranet4 {}".format(raw_bytes.decode("utf-8"))
+            # fallback to model + serial number
+            model = await self.device.read_gatt_char(self.CHARACTERISTIC_MODEL_NUMBER)
+            serial = await self.device.read_gatt_char(self.CHARACTERISTIC_SERIAL_NO)
+            return "{} {}".format(model.decode("utf-8"), serial.decode("utf-8"))
 
     async def get_version(self):
         """Get firmware version of remote device"""
