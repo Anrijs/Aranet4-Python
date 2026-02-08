@@ -193,9 +193,9 @@ class CurrentReading:
             ret += f"  Age:            {self.ago}/{self.interval} s\n"
         elif self.type == AranetType.ARANET_RADON:
             ret += f"  Radon Conc.:    {self.radon_concentration} Bq/m3\n"
-            if self.name.startswith("AranetRn+") or self.temperature != 0:
+            if self.name.startswith("AranetRn+") or self.temperature != -1:
                 ret += f"  Temperature:    {self.temperature:.01f} \u00b0C\n"
-            if self.name.startswith("AranetRn+") or self.humidity != 0:
+            if self.name.startswith("AranetRn+") or self.humidity != -1:
                 ret += f"  Humidity:       {self.humidity} %\n"
             ret += f"  Pressure:       {self.pressure:.01f} hPa\n"
             ret += f"  Battery:        {self.battery} %\n"
@@ -226,11 +226,11 @@ class CurrentReading:
             data["radiation_duration"] = self.radiation_duration
         elif self.type == AranetType.ARANET_RADON:
             data["radon_concentration"] = self.radon_concentration
-            if self.name.startswith("AranetRn+") or self.temperature != 0:
+            if self.name.startswith("AranetRn+") or self.temperature != -1:
                 data["temperature"] = self.temperature
-            if self.name.startswith("AranetRn+") or self.humidity != 0:
+            if self.name.startswith("AranetRn+") or self.humidity != -1:
                 data["humidity"] = self.humidity
-            data["pressure"] = self.pressure    
+            data["pressure"] = self.pressure
 
         return data
 
@@ -325,6 +325,11 @@ class CurrentReading:
             self.interval = value[7]
             self.ago = value[8]
             self.counter = value[9]
+
+        if (self.name and self.name.startswith("AranetRn1")) or self.temperature == 0:
+            self.temperature = -1
+        if (self.name and self.name.startswith("AranetRn1")) or self.humidity == 0:
+            self.humidity = -1
 
     @staticmethod
     def _parse_avg_radon(time, average) -> dict:
@@ -499,8 +504,8 @@ class Aranet4Advertisement:
                 if end > 0 and len(raw_bytes[:end]) == end:
                     value = struct.unpack(value_fmt, raw_bytes[:end])
                     self.readings = CurrentReading()
-                    self.readings.decode(value, aranetv)
                     self.readings.name = device.name
+                    self.readings.decode(value, aranetv)
                 else:
                     mf_data.integrations = False
 
