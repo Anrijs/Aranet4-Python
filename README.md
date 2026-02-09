@@ -1,6 +1,11 @@
 
 # Aranet4 Python client
-Python library and command line interface for [Aranet4](https://aranet.com/products/aranet4-home), [Aranet2](https://aranet.com/products/aranet2-home), [Aranet Radiation](https://aranet.com/products/aranet-radiation-sensor) and [Aranet Radon Plus](https://aranet.com/products/aranet-radon-sensor) sensors.
+Python library and command line interface for [Aranet Home](https://aranet.com/) sensors:
+* [Aranet4](https://aranet.com/products/aranet4-home)
+* [Aranet2](https://aranet.com/products/aranet2-home)
+* [Aranet Radiation](https://aranet.com/products/aranet-radiation-sensor)
+* [Aranet Radon Plus](https://aranet.com/products/aranet-radon-sensor)
+* [Aranet Radon One](https://aranet.com/en/home/products/aranet-radon-one-green)
 
 ## Installation
 1. Install aranet4 and its dependencies:
