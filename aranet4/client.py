@@ -5,7 +5,7 @@ from enum import IntEnum
 import re
 import struct
 import math
-from typing import List, NamedTuple
+from typing import NamedTuple
 
 from bleak import BleakClient
 from bleak import BleakScanner
@@ -547,7 +547,7 @@ class Record:
     version: str
     records_on_device: int
     filter: Filter
-    value: List[RecordItem] = field(default_factory=list)
+    value: list[RecordItem] = field(default_factory=list)
 
 
 @dataclass
@@ -1103,7 +1103,7 @@ class Aranet4Scanner:
         await self.scanner.stop()
 
 
-async def _find_nearby(detect_callback: callable, duration: int) -> List[BLEDevice]:
+async def _find_nearby(detect_callback: callable, duration: int) -> list[BLEDevice]:
     scanner = Aranet4Scanner(detect_callback)
     await scanner.start()
     await asyncio.sleep(duration)

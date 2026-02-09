@@ -1,6 +1,6 @@
 import setuptools
 
-with open(file="README.md", mode="r", encoding="utf-8") as file:
+with open(file="README.md", encoding="utf-8") as file:
     long_description = file.read()
 
 setuptools.setup(
@@ -11,6 +11,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/Anrijs/Aranet4-Python",
     packages=setuptools.find_packages(),
+    python_requires=">=3.10",
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",

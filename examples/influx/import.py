@@ -28,7 +28,7 @@ def main(argv):
     results = []
 
     device_name = argv[1]
-    with open(file=argv[0], mode="r", encoding="utf-8") as file:
+    with open(file=argv[0], encoding="utf-8") as file:
         lines = file.readlines()
 
     for ln in lines:
