@@ -1,11 +1,16 @@
+from pathlib import Path
 import setuptools
+
+version = {}
+version_file = Path(__file__).parent / "aranet4" / "__version__.py"
+exec(version_file.read_text(), version)
 
 with open(file="README.md", encoding="utf-8") as file:
     long_description = file.read()
 
 setuptools.setup(
     name="aranet4",
-    version="2.5.1",
+    version=version["__version__"],
     description="Aranet Python client",
     long_description=long_description,
     long_description_content_type="text/markdown",
