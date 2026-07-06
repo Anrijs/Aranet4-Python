@@ -122,6 +122,23 @@ class DataManipulation(unittest.TestCase):
         times = client._log_times(now, log_records, log_interval, 20)
         self.assertListEqual(expected, times)
 
+    def test_model_entry_filter_aranet4(self):
+        # Regression test for #69: Aranet4 was treated as an unknown model,
+        # making get_all_records() return an empty Record
+        entry_filter = {"temp": True, "humi": True, "pres": True, "co2": True}
+        unknown = client._apply_model_entry_filter("Aranet4 12345", entry_filter)
+        self.assertFalse(unknown)
+        self.assertDictEqual(
+            {"temp": True, "humi": True, "pres": True, "co2": True}, entry_filter
+        )
+
+    def test_model_entry_filter_known_models(self):
+        for name in ["Aranet4 12345", "Aranet2 12345", "Aranet☢ 1", "AranetRn+ 1", "AranetRn1 1"]:
+            self.assertFalse(client._apply_model_entry_filter(name, {}), name)
+
+    def test_model_entry_filter_unknown_model(self):
+        self.assertTrue(client._apply_model_entry_filter("Foo", {}))
+
 
 if __name__ == "__main__":
     unittest.main()

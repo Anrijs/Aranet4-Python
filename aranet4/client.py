@@ -1122,6 +1122,39 @@ def find_nearby(detect_callback: callable, duration: int = 8) -> list[BLEDevice]
     return asyncio.run(_find_nearby(detect_callback, duration))
 
 
+def _apply_model_entry_filter(dev_name, entry_filter):
+    """
+    Adjust `entry_filter` in place for the device model detected from `dev_name`.
+    Returns True if the device model is not recognized.
+    """
+    if dev_name.startswith("Aranet2"):
+        entry_filter["pres"] = False
+        entry_filter["co2"] = False
+        if entry_filter.get("humi", False):
+            entry_filter["humi"] = 2  # v2 humidity
+    elif dev_name.startswith("Aranet\u2622"):
+        entry_filter["pres"] = False
+        entry_filter["co2"] = False
+        entry_filter["humi"] = False
+        entry_filter["temp"] = False
+        entry_filter["rad_dose"] = entry_filter.get("rad_dose", True)
+        entry_filter["rad_dose_rate"] = entry_filter.get("rad_dose_rate", True)
+        entry_filter["rad_dose_total"] = entry_filter.get("rad_dose_total", True)
+    elif dev_name.startswith("AranetRn"):
+        entry_filter["co2"] = False
+        entry_filter["radon_concentration"] = entry_filter.get("radon_concentration", True)
+        entry_filter["pres"] = entry_filter.get("pres", True)
+        if dev_name.startswith("AranetRn+"):
+            entry_filter["temp"] = entry_filter.get("temp", True)
+            if entry_filter.get("humi", False):
+                entry_filter["humi"] = 2  # v2 humidity
+    elif dev_name.startswith("Aranet4"):
+        pass  # default entry_filter (temp/humi/pres/co2) is correct for Aranet4
+    else:
+        return True
+    return False
+
+
 async def _all_records(address, entry_filter, remove_empty):
     """
     Get stored data points from device. Apply any filters requested
@@ -1155,31 +1188,7 @@ async def _all_records(address, entry_filter, remove_empty):
         last_log = await monitor.get_seconds_since_update()
         now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
 
-    unknwon_model = False
-
-    if dev_name.startswith("Aranet2"):
-        entry_filter["pres"] = False
-        entry_filter["co2"] = False
-        if entry_filter.get("humi", False):
-            entry_filter["humi"] = 2  # v2 humidity
-    elif dev_name.startswith("Aranet\u2622"):
-        entry_filter["pres"] = False
-        entry_filter["co2"] = False
-        entry_filter["humi"] = False
-        entry_filter["temp"] = False
-        entry_filter["rad_dose"] = entry_filter.get("rad_dose", True)
-        entry_filter["rad_dose_rate"] = entry_filter.get("rad_dose_rate", True)
-        entry_filter["rad_dose_total"] = entry_filter.get("rad_dose_total", True)
-    elif dev_name.startswith("AranetRn"):
-        entry_filter["co2"] = False
-        entry_filter["radon_concentration"] = entry_filter.get("radon_concentration", True)
-        entry_filter["pres"] = entry_filter.get("pres", True)
-        if dev_name.startswith("AranetRn+"):
-            entry_filter["temp"] = entry_filter.get("temp", True)
-            if entry_filter.get("humi", False):
-                entry_filter["humi"] = 2  # v2 humidity
-    else:
-        unknwon_model = True
+    unknwon_model = _apply_model_entry_filter(dev_name, entry_filter)
 
     log_size = await monitor.get_total_readings()
     log_points = _log_times(now, log_size, interval, last_log)
